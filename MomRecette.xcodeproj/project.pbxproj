@@ -1,0 +1,546 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0846D2C5930EE9F3DF754AAC /* MomRecetteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31429291B5EBB096E597C1D7 /* MomRecetteTests.swift */; };
+		181552F09F76D2394114B973 /* ImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B46E585260107A71DB68699 /* ImportView.swift */; };
+		268A52CF06031AB4D185BEFA /* ImagePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C2F2CC9920C84041E840294 /* ImagePickerView.swift */; };
+		26CE1A6E5CF135C3214E1F8F /* momrecette_bundle.json in Resources */ = {isa = PBXBuildFile; fileRef = C948C05906531C6BBB99DCF2 /* momrecette_bundle.json */; };
+		27E0B6EC16AEF35E0D430556 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B0BB10949ABDD4A08D5F6B45 /* Assets.xcassets */; };
+		4E56557D41B5ABA7A25237C6 /* MomRecetteApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A1277114312B3290520EED /* MomRecetteApp.swift */; };
+		6AC30E0CD218BFAB73FD2A39 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF4FF73FEDE7521BC3CCEB1 /* ContentView.swift */; };
+		907460FC2EE4986DDA7BF0E0 /* RecipeCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9797936BF587FC491B5AF76A /* RecipeCardView.swift */; };
+		927532816EC5E6642D426B6C /* AddEditRecipeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 035C31E7CCF6B745E9813875 /* AddEditRecipeView.swift */; };
+		A4841452A6FD206AC48AC0B1 /* RecipeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9B7E16A1F7ED8373B817794 /* RecipeStore.swift */; };
+		CD1092D6F053C13067746FEE /* RolodexDeckView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 779B7E3F164FA77813EB1517 /* RolodexDeckView.swift */; };
+		D68C99006C0B4207C14A7B20 /* Recipe.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD54B59560767AED809FA965 /* Recipe.swift */; };
+		EF77509933610CABBC08812B /* RecipeDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26A32FE610B7A99B5CCE34A4 /* RecipeDetailView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		79FEB3699E8FC2D331C20C5F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FEE6860A64749C4D5C86E39B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C45509A1AA992422D32A38D3;
+			remoteInfo = MomRecette;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		01A1277114312B3290520EED /* MomRecetteApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomRecetteApp.swift; sourceTree = "<group>"; };
+		035C31E7CCF6B745E9813875 /* AddEditRecipeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEditRecipeView.swift; sourceTree = "<group>"; };
+		117536E29C33336A7C9EFE7C /* MomRecetteTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MomRecetteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		1B46E585260107A71DB68699 /* ImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportView.swift; sourceTree = "<group>"; };
+		26A32FE610B7A99B5CCE34A4 /* RecipeDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeDetailView.swift; sourceTree = "<group>"; };
+		31429291B5EBB096E597C1D7 /* MomRecetteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomRecetteTests.swift; sourceTree = "<group>"; };
+		4CF4FF73FEDE7521BC3CCEB1 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		63A43F8FCE9B04BF0D9DFA80 /* MomRecette.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MomRecette.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		779B7E3F164FA77813EB1517 /* RolodexDeckView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RolodexDeckView.swift; sourceTree = "<group>"; };
+		7C2F2CC9920C84041E840294 /* ImagePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePickerView.swift; sourceTree = "<group>"; };
+		9797936BF587FC491B5AF76A /* RecipeCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeCardView.swift; sourceTree = "<group>"; };
+		B0BB10949ABDD4A08D5F6B45 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B8DADECAFC75DA7EBAC4202D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		C948C05906531C6BBB99DCF2 /* momrecette_bundle.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = momrecette_bundle.json; sourceTree = "<group>"; };
+		D9B7E16A1F7ED8373B817794 /* RecipeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeStore.swift; sourceTree = "<group>"; };
+		FD54B59560767AED809FA965 /* Recipe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Recipe.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		03C0041D0FA50D0581EE9F84 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				D9B7E16A1F7ED8373B817794 /* RecipeStore.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		0844AC0D8AA3A24D4E24E5F2 /* Card */ = {
+			isa = PBXGroup;
+			children = (
+				9797936BF587FC491B5AF76A /* RecipeCardView.swift */,
+			);
+			path = Card;
+			sourceTree = "<group>";
+		};
+		1590C3F1DE04710FE43249F8 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				7C2F2CC9920C84041E840294 /* ImagePickerView.swift */,
+				1B46E585260107A71DB68699 /* ImportView.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		16EA412396BBED88F9CBF664 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				4CF4FF73FEDE7521BC3CCEB1 /* ContentView.swift */,
+				C0BE053FF9D565AE623C0C49 /* AddEdit */,
+				0844AC0D8AA3A24D4E24E5F2 /* Card */,
+				1590C3F1DE04710FE43249F8 /* Components */,
+				71A73207254617890B13D7B8 /* Deck */,
+				C89CE49690333FDBBD3EF67A /* Detail */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		71A73207254617890B13D7B8 /* Deck */ = {
+			isa = PBXGroup;
+			children = (
+				779B7E3F164FA77813EB1517 /* RolodexDeckView.swift */,
+			);
+			path = Deck;
+			sourceTree = "<group>";
+		};
+		7906CCFE5CF95BD3C6907515 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				63A43F8FCE9B04BF0D9DFA80 /* MomRecette.app */,
+				117536E29C33336A7C9EFE7C /* MomRecetteTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		8E51A7B78549A956E6229C21 /* MomRecette */ = {
+			isa = PBXGroup;
+			children = (
+				B0BB10949ABDD4A08D5F6B45 /* Assets.xcassets */,
+				B8DADECAFC75DA7EBAC4202D /* Info.plist */,
+				E625E8651DBD670102C380F4 /* App */,
+				F46141A2E11F2556624B3260 /* Models */,
+				F22450AF7C95BBC84CDD208E /* Resources */,
+				03C0041D0FA50D0581EE9F84 /* ViewModels */,
+				16EA412396BBED88F9CBF664 /* Views */,
+			);
+			name = MomRecette;
+			sourceTree = "<group>";
+		};
+		B4C2FEE3228DA13A50F25FBF /* MomRecetteTests */ = {
+			isa = PBXGroup;
+			children = (
+				31429291B5EBB096E597C1D7 /* MomRecetteTests.swift */,
+			);
+			path = MomRecetteTests;
+			sourceTree = "<group>";
+		};
+		C0BE053FF9D565AE623C0C49 /* AddEdit */ = {
+			isa = PBXGroup;
+			children = (
+				035C31E7CCF6B745E9813875 /* AddEditRecipeView.swift */,
+			);
+			path = AddEdit;
+			sourceTree = "<group>";
+		};
+		C89CE49690333FDBBD3EF67A /* Detail */ = {
+			isa = PBXGroup;
+			children = (
+				26A32FE610B7A99B5CCE34A4 /* RecipeDetailView.swift */,
+			);
+			path = Detail;
+			sourceTree = "<group>";
+		};
+		E625E8651DBD670102C380F4 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				01A1277114312B3290520EED /* MomRecetteApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		F22450AF7C95BBC84CDD208E /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				C948C05906531C6BBB99DCF2 /* momrecette_bundle.json */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		F46141A2E11F2556624B3260 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				FD54B59560767AED809FA965 /* Recipe.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		FC92785D9CC9FD9CEE1FCCEA = {
+			isa = PBXGroup;
+			children = (
+				8E51A7B78549A956E6229C21 /* MomRecette */,
+				B4C2FEE3228DA13A50F25FBF /* MomRecetteTests */,
+				7906CCFE5CF95BD3C6907515 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		209B689144E6CF8E6473842C /* MomRecetteTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 05EEA50FDED99B9D987BB500 /* Build configuration list for PBXNativeTarget "MomRecetteTests" */;
+			buildPhases = (
+				2C852CC3FC0C766CBD9E3B2E /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				315A8C722DD46D9F0F5A8E12 /* PBXTargetDependency */,
+			);
+			name = MomRecetteTests;
+			packageProductDependencies = (
+			);
+			productName = MomRecetteTests;
+			productReference = 117536E29C33336A7C9EFE7C /* MomRecetteTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		C45509A1AA992422D32A38D3 /* MomRecette */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 80FD4CA5F4B06954E7962C70 /* Build configuration list for PBXNativeTarget "MomRecette" */;
+			buildPhases = (
+				651B1C978378E76430F40309 /* Sources */,
+				35885BE6600485FF33084698 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MomRecette;
+			packageProductDependencies = (
+			);
+			productName = MomRecette;
+			productReference = 63A43F8FCE9B04BF0D9DFA80 /* MomRecette.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		FEE6860A64749C4D5C86E39B /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 2630;
+			};
+			buildConfigurationList = 7F9D2A3BBEEBBC26A0B1C0E1 /* Build configuration list for PBXProject "MomRecette" */;
+			developmentRegion = fr;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				fr,
+			);
+			mainGroup = FC92785D9CC9FD9CEE1FCCEA;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 7906CCFE5CF95BD3C6907515 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C45509A1AA992422D32A38D3 /* MomRecette */,
+				209B689144E6CF8E6473842C /* MomRecetteTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		35885BE6600485FF33084698 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				27E0B6EC16AEF35E0D430556 /* Assets.xcassets in Resources */,
+				26CE1A6E5CF135C3214E1F8F /* momrecette_bundle.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		2C852CC3FC0C766CBD9E3B2E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0846D2C5930EE9F3DF754AAC /* MomRecetteTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		651B1C978378E76430F40309 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				927532816EC5E6642D426B6C /* AddEditRecipeView.swift in Sources */,
+				6AC30E0CD218BFAB73FD2A39 /* ContentView.swift in Sources */,
+				268A52CF06031AB4D185BEFA /* ImagePickerView.swift in Sources */,
+				181552F09F76D2394114B973 /* ImportView.swift in Sources */,
+				4E56557D41B5ABA7A25237C6 /* MomRecetteApp.swift in Sources */,
+				D68C99006C0B4207C14A7B20 /* Recipe.swift in Sources */,
+				907460FC2EE4986DDA7BF0E0 /* RecipeCardView.swift in Sources */,
+				EF77509933610CABBC08812B /* RecipeDetailView.swift in Sources */,
+				A4841452A6FD206AC48AC0B1 /* RecipeStore.swift in Sources */,
+				CD1092D6F053C13067746FEE /* RolodexDeckView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		315A8C722DD46D9F0F5A8E12 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C45509A1AA992422D32A38D3 /* MomRecette */;
+			targetProxy = 79FEB3699E8FC2D331C20C5F /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1B97DAE24A86870AE93B330A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MomRecette.app/MomRecette";
+			};
+			name = Debug;
+		};
+		2E2E1C00E10718F607ACA738 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MomRecette.app/MomRecette";
+			};
+			name = Release;
+		};
+		5BEA54E644F1823C1957AF87 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Prendre une photo du plat";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Choisir une photo pour la recette";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.villeneuves.MomRecette;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTS_MACCATALYST = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		8BACEFD534930EDE01271B84 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Prendre une photo du plat";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Choisir une photo pour la recette";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.villeneuves.MomRecette;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTS_MACCATALYST = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		BA5432854DC2CD640BE037D3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				DEVELOPMENT_TEAM = 8GTRA62F55;
+				INFOPLIST_FILE = MomRecette/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Prendre une photo du plat";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Choisir une photo pour la recette";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.villeneuves.MomRecette;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = YES;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		BB5A22E2B425DE83B4A713E3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = MomRecette/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Prendre une photo du plat";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Choisir une photo pour la recette";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.villeneuves.MomRecette;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = YES;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		05EEA50FDED99B9D987BB500 /* Build configuration list for PBXNativeTarget "MomRecetteTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1B97DAE24A86870AE93B330A /* Debug */,
+				2E2E1C00E10718F607ACA738 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		7F9D2A3BBEEBBC26A0B1C0E1 /* Build configuration list for PBXProject "MomRecette" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5BEA54E644F1823C1957AF87 /* Debug */,
+				8BACEFD534930EDE01271B84 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		80FD4CA5F4B06954E7962C70 /* Build configuration list for PBXNativeTarget "MomRecette" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BA5432854DC2CD640BE037D3 /* Debug */,
+				BB5A22E2B425DE83B4A713E3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = FEE6860A64749C4D5C86E39B /* Project object */;
+}
