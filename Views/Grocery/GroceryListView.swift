@@ -69,9 +69,10 @@ struct GroceryListView: View {
                                 item: groceryList.exportText(for: selectedStore),
                                 subject: Text("Liste d'epicerie - \(selectedStore.rawValue)")
                             ) {
-                                Image(systemName: "square.and.arrow.up")
+                                Label("Exporter", systemImage: "square.and.arrow.up")
                             }
                             .accessibilityLabel("Exporter la liste d'epicerie")
+                            .help("Partager la liste d'epicerie")
                         }
 
                         Button("Effacer") {
