@@ -6,104 +6,137 @@ struct RecipeCardView: View {
     let recipe: Recipe
     var isTop: Bool = true
 
-    private var cardImage: Image {
-        if let data = recipe.imageData, let ui = UIImage(data: data) {
-            return Image(uiImage: ui)
-        }
-        return Image(systemName: "fork.knife")
-    }
-
     private var hasPhoto: Bool {
         recipe.imageData != nil
     }
 
+    private var featuredIngredientGroups: [Recipe.IngredientGroup] {
+        Array(recipe.ingredientGroups.prefix(2))
+    }
+
     var body: some View {
-        ZStack(alignment: .bottom) {
-            // Background card
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color(UIColor.systemBackground))
-                .shadow(color: .black.opacity(0.18), radius: 16, x: 0, y: 8)
+        ZStack(alignment: .bottomLeading) {
+            posterBackground
 
-            VStack(spacing: 0) {
-                // ── Photo / Placeholder ─────────────────────
-                ZStack {
-                    if hasPhoto, let data = recipe.imageData, let ui = UIImage(data: data) {
-                        Image(uiImage: ui)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 280)
-                            .clipped()
-                    } else {
-                        Rectangle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        recipe.category.color.opacity(0.7),
-                                        recipe.category.color.opacity(0.4)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 280)
-                            .overlay {
-                                VStack(spacing: 8) {
-                                    Text(recipe.category.icon)
-                                        .font(.system(size: 72))
-                                    Text("Ajouter une photo")
-                                        .font(.caption)
-                                        .foregroundStyle(.white.opacity(0.8))
-                                }
-                            }
-                    }
+            LinearGradient(
+                colors: [.clear, .black.opacity(0.06), .black.opacity(0.72)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
 
-                    // Gradient overlay for readability
-                    LinearGradient(
-                        colors: [.clear, .black.opacity(0.4)],
-                        startPoint: .center,
-                        endPoint: .bottom
-                    )
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .top) {
+                    CategoryBadge(category: recipe.category)
+                    Spacer()
+                    Text(hasPhoto ? "Affiche recette" : "Ajouter une photo")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.94))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule()
+                                .fill(.black.opacity(0.26))
+                        )
+                        .overlay(
+                            Capsule()
+                                .stroke(.white.opacity(0.14), lineWidth: 1)
+                        )
                 }
-                .clipShape(UnevenRoundedRectangle(
-                    topLeadingRadius: 20,
-                    bottomLeadingRadius: 0,
-                    bottomTrailingRadius: 0,
-                    topTrailingRadius: 20
-                ))
 
-                // ── Card Info ───────────────────────────────
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        CategoryBadge(category: recipe.category)
-                        Spacer()
-                        Image(systemName: "clock")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                        Text(recipe.totalTime.timeString)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                Spacer()
+
+                if !featuredIngredientGroups.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(featuredIngredientGroups) { group in
+                                HStack(spacing: 6) {
+                                    Text(group.kind.icon)
+                                    Text(group.kind.title)
+                                }
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.white.opacity(0.96))
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(
+                                    Capsule()
+                                        .fill(.black.opacity(0.22))
+                                )
+                            }
+                        }
                     }
+                }
 
+                VStack(alignment: .leading, spacing: 10) {
                     Text(recipe.name)
-                        .font(.title2)
-                        .fontWeight(.bold)
+                        .font(.title2.weight(.bold))
                         .lineLimit(2)
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(.white)
 
                     HStack(spacing: 16) {
-                        Label("\(recipe.servings) portions", systemImage: "person.2")
-                        Label("\(recipe.ingredients.count) ingrédients", systemImage: "list.bullet")
+                        posterMetric("clock", recipe.totalTime.timeString)
+                        posterMetric("person.2", "\(recipe.servings) portions")
+                        posterMetric("list.bullet", "\(recipe.ingredients.count) ingrédients")
                     }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(.ultraThinMaterial.opacity(0.82))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(.white.opacity(0.14), lineWidth: 1)
+                )
+            }
+            .padding(18)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(.white.opacity(0.08), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.22), radius: 22, x: 0, y: 12)
+        .frame(width: cardWidth, height: cardHeight)
+    }
+
+    @ViewBuilder
+    private var posterBackground: some View {
+        if hasPhoto, let data = recipe.imageData, let ui = UIImage(data: data) {
+            Image(uiImage: ui)
+                .resizable()
+                .scaledToFill()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .scaleEffect(1.04)
+                .saturation(1.08)
+                .clipped()
+        } else {
+            ZStack {
+                LinearGradient(
+                    colors: [
+                        recipe.category.color.opacity(0.92),
+                        recipe.category.color.opacity(0.58),
+                        .black.opacity(0.18)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+
+                VStack(spacing: 12) {
+                    Text(recipe.category.icon)
+                        .font(.system(size: 82))
+                    Text("Ajoutez une vraie photo du plat")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.9))
+                }
             }
         }
-        .frame(width: cardWidth, height: cardHeight)
+    }
+
+    private func posterMetric(_ systemName: String, _ value: String) -> some View {
+        Label(value, systemImage: systemName)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.white.opacity(0.92))
     }
 
     private var cardWidth: CGFloat { 340 }

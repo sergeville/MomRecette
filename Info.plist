@@ -24,6 +24,8 @@
 	<string>Prendre une photo du plat</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Choisir une photo pour la recette</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>Envoyer la liste d'epicerie vers Rappels</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -31,6 +33,19 @@
 		<key>UISceneConfigurations</key>
 		<dict/>
 	</dict>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
 </dict>

@@ -25,6 +25,145 @@ struct Recipe: Identifiable, Codable, Hashable {
         var id: UUID = UUID()
         var quantity: String = ""
         var name: String
+
+        var kind: IngredientKind {
+            IngredientKind.classify(name: name)
+        }
+    }
+
+    struct IngredientGroup: Identifiable, Hashable {
+        let kind: IngredientKind
+        let ingredients: [Ingredient]
+
+        var id: IngredientKind { kind }
+        var count: Int { ingredients.count }
+        var sampleNames: String {
+            ingredients
+                .prefix(3)
+                .map(\.name)
+                .joined(separator: ", ")
+        }
+    }
+
+    enum IngredientKind: String, CaseIterable, Hashable, Identifiable {
+        case fruits
+        case vegetables
+        case meat
+        case seafood
+        case spices
+        case dairy
+        case grains
+        case pantry
+        case other
+
+        var id: String { rawValue }
+
+        var title: String {
+            switch self {
+            case .fruits: return "Fruits"
+            case .vegetables: return "Légumes"
+            case .meat: return "Viandes"
+            case .seafood: return "Poissons"
+            case .spices: return "Épices"
+            case .dairy: return "Laitiers"
+            case .grains: return "Céréales"
+            case .pantry: return "Base"
+            case .other: return "Autres"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .fruits: return "🍓"
+            case .vegetables: return "🥕"
+            case .meat: return "🥩"
+            case .seafood: return "🦐"
+            case .spices: return "🧂"
+            case .dairy: return "🥛"
+            case .grains: return "🌾"
+            case .pantry: return "🫙"
+            case .other: return "🍽️"
+            }
+        }
+
+        var rank: Int {
+            switch self {
+            case .fruits: return 0
+            case .vegetables: return 1
+            case .meat: return 2
+            case .seafood: return 3
+            case .spices: return 4
+            case .dairy: return 5
+            case .grains: return 6
+            case .pantry: return 7
+            case .other: return 8
+            }
+        }
+
+        fileprivate static func classify(name: String) -> IngredientKind {
+            let normalized = name.foldedForMatching
+
+            if normalized.containsAny([
+                "fraise", "bleuet", "framboise", "mangue", "ananas", "pomme",
+                "banane", "orange", "citron", "lime", "raisin", "poire"
+            ]) {
+                return .fruits
+            }
+
+            if normalized.containsAny([
+                "oignon", "ail", "poivron", "champignon", "carotte", "brocoli",
+                "chou", "laitue", "concombre", "epinard", "courgette", "celeri",
+                "tomate", "citronnelle", "legumes", "echalote", "coriandre"
+            ]) {
+                return .vegetables
+            }
+
+            if normalized.containsAny([
+                "boeuf", "bœuf", "porc", "poulet", "dinde", "veau", "agneau",
+                "jambon", "bacon", "saucisse", "viande"
+            ]) {
+                return .meat
+            }
+
+            if normalized.containsAny([
+                "crevette", "crevettes", "petoncle", "pétoncle", "poisson",
+                "saumon", "thon", "morue", "fruits de mer"
+            ]) {
+                return .seafood
+            }
+
+            if normalized.containsAny([
+                "sel", "poivre", "cannelle", "origan", "basilic", "paprika",
+                "cumin", "cari", "curcuma", "vanille", "girofle", "epice",
+                "épice", "sauce soja", "sauce de poisson", "pate de cari"
+            ]) {
+                return .spices
+            }
+
+            if normalized.containsAny([
+                "lait", "beurre", "creme", "crème", "fromage", "gruyere",
+                "gruyère", "yogourt", "yaourt"
+            ]) {
+                return .dairy
+            }
+
+            if normalized.containsAny([
+                "farine", "gruau", "avoine", "riz", "vermicelle", "pates",
+                "pâtes", "pain", "chapelure"
+            ]) {
+                return .grains
+            }
+
+            if normalized.containsAny([
+                "sucre", "cassonade", "sirop", "huile", "bouillon", "tofu",
+                "oeuf", "œuf", "abaisse", "poudre a pate", "poudre à pate",
+                "pate de tomate", "pâte de tomate", "lait de coco"
+            ]) {
+                return .pantry
+            }
+
+            return .other
+        }
     }
 
     // MARK: - Category
@@ -69,6 +208,136 @@ struct Recipe: Identifiable, Codable, Hashable {
             case .autres:      return "🍴"
             }
         }
+    }
+}
+
+extension Recipe {
+    var ingredientGroups: [IngredientGroup] {
+        let grouped = Dictionary(grouping: ingredients, by: \.kind)
+
+        return grouped
+            .map { IngredientGroup(kind: $0.key, ingredients: $0.value) }
+            .sorted {
+                if $0.count == $1.count {
+                    return $0.kind.rank < $1.kind.rank
+                }
+                return $0.count > $1.count
+            }
+    }
+
+    var photoLookupKeys: [String] {
+        var keys: [String] = [
+            id.uuidString.lowercased(),
+            name.photoLookupKey
+        ]
+
+        if name.photoLookupKey.hasPrefix("the-") {
+            keys.append(String(name.photoLookupKey.dropFirst(4)))
+        }
+
+        return Array(NSOrderedSet(array: keys)) as? [String] ?? keys
+    }
+}
+
+extension Recipe.IngredientKind {
+    static func kind(forIngredientNamed name: String) -> Self {
+        classify(name: name)
+    }
+
+    static func icon(forIngredientNamed name: String) -> String {
+        let normalized = name.foldedForMatching
+
+        if normalized.containsAny(["amande", "noix", "noisette", "pacane", "pistache"]) {
+            return "🌰"
+        }
+        if normalized.containsAny(["oignon", "echalote"]) {
+            return "🧅"
+        }
+        if normalized.contains("ail") {
+            return "🧄"
+        }
+        if normalized.containsAny(["tomate"]) {
+            return "🍅"
+        }
+        if normalized.containsAny(["carotte"]) {
+            return "🥕"
+        }
+        if normalized.containsAny(["brocoli"]) {
+            return "🥦"
+        }
+        if normalized.containsAny(["citron", "lime"]) {
+            return "🍋"
+        }
+        if normalized.containsAny(["pomme"]) {
+            return "🍎"
+        }
+        if normalized.containsAny(["banane"]) {
+            return "🍌"
+        }
+        if normalized.containsAny(["fraise", "framboise", "bleuet"]) {
+            return "🍓"
+        }
+        if normalized.containsAny(["bacon"]) {
+            return "🥓"
+        }
+        if normalized.containsAny(["boeuf", "bœuf", "steak"]) {
+            return "🥩"
+        }
+        if normalized.containsAny(["porc", "jambon", "saucisse"]) {
+            return "🍖"
+        }
+        if normalized.containsAny(["poulet", "dinde"]) {
+            return "🍗"
+        }
+        if normalized.containsAny(["crevette", "crevettes"]) {
+            return "🍤"
+        }
+        if normalized.containsAny(["poisson", "saumon", "thon", "morue", "petoncle", "pétoncle"]) {
+            return "🐟"
+        }
+        if normalized.containsAny(["fromage", "gruyere", "gruyère"]) {
+            return "🧀"
+        }
+        if normalized.containsAny(["beurre"]) {
+            return "🧈"
+        }
+        if normalized.containsAny(["lait", "creme", "crème", "yogourt", "yaourt"]) {
+            return "🥛"
+        }
+        if normalized.containsAny(["oeuf", "œuf"]) {
+            return "🥚"
+        }
+        if normalized.containsAny(["farine", "gruau", "avoine", "riz", "vermicelle", "pates", "pâtes"]) {
+            return "🌾"
+        }
+        if normalized.containsAny(["sucre", "cassonade", "sirop"]) {
+            return "🍯"
+        }
+        if normalized.containsAny(["sel", "poivre", "cannelle", "origan", "basilic", "paprika", "cumin", "vanille"]) {
+            return "🧂"
+        }
+
+        return classify(name: name).icon
+    }
+}
+
+extension String {
+    var foldedForMatching: String {
+        folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+    }
+
+    var photoLookupKey: String {
+        let folded = foldedForMatching.replacingOccurrences(of: "&", with: " and ")
+        let pieces = folded
+            .components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        return pieces.joined(separator: "-")
+    }
+
+    func containsAny(_ candidates: [String]) -> Bool {
+        candidates.contains { contains($0) }
     }
 }
 

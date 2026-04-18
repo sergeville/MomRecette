@@ -7,36 +7,36 @@ struct ImportView: View {
     @EnvironmentObject var store: RecipeStore
     @Environment(\.dismiss) var dismiss
 
-    @State private var showFilePicker = false
+    @State private var showJSONFilePicker = false
+    @State private var showPhotoPicker = false
     @State private var importResult: ImportResult? = nil
     @State private var isLoading = false
 
     enum ImportResult {
         case success(Int)
         case duplicate(Int, Int)   // imported, skipped
+        case photos(RecipeStore.RecipePhotoBatchImportResult)
         case error(String)
     }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 32) {
-                // ── Icon ────────────────────────────────
                 VStack(spacing: 12) {
                     Image(systemName: "square.and.arrow.down.fill")
                         .font(.system(size: 64))
                         .foregroundStyle(Color.accentColor)
-                    Text("Importer des recettes")
+                    Text("Importer dans MomRecette")
                         .font(.title2)
                         .fontWeight(.bold)
-                    Text("Importez un fichier JSON contenant\nune ou plusieurs recettes.")
+                    Text("Importez un fichier JSON de recettes\nou plusieurs photos nommées comme vos recettes.")
                         .multilineTextAlignment(.center)
                         .foregroundStyle(.secondary)
                 }
 
-                // ── Buttons ──────────────────────────────
                 VStack(spacing: 14) {
                     Button {
-                        showFilePicker = true
+                        showJSONFilePicker = true
                     } label: {
                         Label("Choisir un fichier JSON", systemImage: "doc.badge.plus")
                             .frame(maxWidth: .infinity)
@@ -46,11 +46,29 @@ struct ImportView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
                     .fileImporter(
-                        isPresented: $showFilePicker,
+                        isPresented: $showJSONFilePicker,
                         allowedContentTypes: [.json],
                         allowsMultipleSelection: false
                     ) { result in
                         handleImport(result: result)
+                    }
+
+                    Button {
+                        showPhotoPicker = true
+                    } label: {
+                        Label("Choisir des photos", systemImage: "photo.stack")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .foregroundStyle(.primary)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+                    .fileImporter(
+                        isPresented: $showPhotoPicker,
+                        allowedContentTypes: [.image],
+                        allowsMultipleSelection: true
+                    ) { result in
+                        handlePhotoImport(result: result)
                     }
 
                     Button {
@@ -65,7 +83,12 @@ struct ImportView: View {
                     }
                 }
 
-                // ── Result ───────────────────────────────
+                if isLoading {
+                    ProgressView("Importation en cours…")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
                 if let result = importResult {
                     resultView(result)
                         .transition(.scale.combined(with: .opacity))
@@ -73,7 +96,6 @@ struct ImportView: View {
 
                 Spacer()
 
-                // ── JSON Format ──────────────────────────
                 formatHintView
             }
             .padding(24)
@@ -87,8 +109,6 @@ struct ImportView: View {
         }
     }
 
-    // MARK: - Sub-Views
-
     @ViewBuilder
     private func resultView(_ result: ImportResult) -> some View {
         HStack(spacing: 14) {
@@ -99,6 +119,10 @@ struct ImportView: View {
             case .duplicate(let imp, let skip):
                 Image(systemName: "info.circle.fill").foregroundStyle(.orange)
                 Text("\(imp) importée\(imp > 1 ? "s" : ""), \(skip) doublon\(skip > 1 ? "s" : "") ignoré\(skip > 1 ? "s" : "")")
+            case .photos(let result):
+                Image(systemName: result.issueCount == 0 ? "photo.badge.checkmark" : "info.circle.fill")
+                    .foregroundStyle(result.issueCount == 0 ? .green : .orange)
+                Text(photoImportSummary(for: result))
             case .error(let msg):
                 Image(systemName: "xmark.circle.fill").foregroundStyle(.red)
                 Text(msg).lineLimit(2)
@@ -131,10 +155,12 @@ struct ImportView: View {
             .padding(10)
             .background(Color(UIColor.tertiarySystemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            Label("Pour les photos, utilisez des noms de fichiers qui correspondent aux recettes. MomRecette normalise ensuite le nom et sauvegarde l'image dans le dossier live de l'app.", systemImage: "photo")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
-
-    // MARK: - Logic
 
     private func handleImport(result: Result<[URL], Error>) {
         switch result {
@@ -144,9 +170,12 @@ struct ImportView: View {
             guard let url = urls.first else { return }
             isLoading = true
 
-            // Security-scoped resource access
             let accessed = url.startAccessingSecurityScopedResource()
-            defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+            defer {
+                if accessed {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
 
             do {
                 let data = try Data(contentsOf: url)
@@ -158,8 +187,20 @@ struct ImportView: View {
         }
     }
 
+    private func handlePhotoImport(result: Result<[URL], Error>) {
+        switch result {
+        case .failure(let error):
+            withAnimation { importResult = .error(error.localizedDescription) }
+        case .success(let urls):
+            guard !urls.isEmpty else { return }
+            isLoading = true
+            let photoImportResult = store.importRecipePhotos(from: urls)
+            withAnimation { importResult = .photos(photoImportResult) }
+            isLoading = false
+        }
+    }
+
     private func importJSON(_ data: Data) {
-        // Try array first, then single object
         var incoming: [Recipe] = []
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
@@ -169,7 +210,6 @@ struct ImportView: View {
         } else if let one = try? decoder.decode(Recipe.self, from: data) {
             incoming = [one]
         } else {
-            // Try lenient import (name-only format from conversion script)
             if let arr = try? JSONDecoder().decode([LenientRecipe].self, from: data) {
                 incoming = arr.map { $0.toRecipe() }
             } else {
@@ -198,6 +238,36 @@ struct ImportView: View {
         let toAdd = Recipe.samples.filter { !existingNames.contains($0.name.lowercased()) }
         toAdd.forEach { store.add($0) }
         withAnimation { importResult = .success(toAdd.count) }
+    }
+
+    private func photoImportSummary(for result: RecipeStore.RecipePhotoBatchImportResult) -> String {
+        var segments: [String] = []
+
+        if result.importedCount > 0 {
+            segments.append("\(result.importedCount) ajoutée\(result.importedCount > 1 ? "s" : "")")
+        }
+
+        if result.replacedCount > 0 {
+            segments.append("\(result.replacedCount) remplacée\(result.replacedCount > 1 ? "s" : "")")
+        }
+
+        if result.unmatchedCount > 0 {
+            segments.append("\(result.unmatchedCount) sans recette correspondante")
+        }
+
+        if result.invalidCount > 0 {
+            segments.append("\(result.invalidCount) image\(result.invalidCount > 1 ? "s" : "") invalide\(result.invalidCount > 1 ? "s" : "")")
+        }
+
+        if result.failedCount > 0 {
+            segments.append("\(result.failedCount) erreur\(result.failedCount > 1 ? "s" : "") de lecture")
+        }
+
+        if segments.isEmpty {
+            return "Aucune photo n'a été importée."
+        }
+
+        return "Photos: " + segments.joined(separator: ", ")
     }
 }
 

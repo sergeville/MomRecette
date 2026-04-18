@@ -113,30 +113,134 @@ final class MomRecetteTests: XCTestCase {
         XCTAssertTrue(exportText.contains("[x] 1 litre bouillon"))
     }
 
-    func testRefreshRecipePhotosLoadsLivePhoto() throws {
-        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let livePhotoDirectory = directory.appendingPathComponent("RecipePhotos", isDirectory: true)
-        try FileManager.default.createDirectory(at: livePhotoDirectory, withIntermediateDirectories: true)
+    func testGroceryListEstimatedPriceUsesStoreMultiplierForCountedItems() {
+        let item = GroceryList.Item(id: UUID(), quantity: "3", name: "pommes")
 
-        let store = RecipeStore(
-            recipesURL: directory.appendingPathComponent("recipes.json"),
-            groceryListURL: directory.appendingPathComponent("grocery-list.json"),
-            shouldLoadSeedData: false,
-            livePhotoDirectoryURL: livePhotoDirectory,
-            enablePhotoAutoRefresh: false
+        let price = item.estimatedPrice(for: .iga)
+
+        XCTAssertEqual(NSDecimalNumber(decimal: price).doubleValue, 3.21, accuracy: 0.001)
+    }
+
+    func testGroceryListExportTextIncludesEstimatedTotal() {
+        let recipe = Recipe(
+            name: "Crumble aux pommes",
+            category: .desserts,
+            ingredients: [
+                .init(quantity: "3", name: "pommes"),
+                .init(quantity: "1 tasse", name: "farine")
+            ]
         )
 
-        let recipe = Recipe(name: "Test Photo", category: .plats)
-        store.add(recipe)
-        XCTAssertNil(store.recipes.first?.imageData)
+        let exportText = GroceryList(recipe: recipe).exportText(for: .iga)
 
-        let imageURL = livePhotoDirectory.appendingPathComponent("test-photo.jpg")
-        try makeJPEGData().write(to: imageURL)
+        XCTAssertTrue(exportText.contains("Total estime:"))
+        XCTAssertTrue(exportText.contains("3 pommes -"))
+        XCTAssertTrue(exportText.contains("1 tasse farine -"))
+    }
 
-        store.refreshRecipePhotosIfNeeded(force: true)
+    func testGroceryListReminderPayloadsIncludeStoreRecipeAndQuantity() {
+        let recipe = Recipe(
+            name: "Crumble aux pommes",
+            category: .desserts,
+            ingredients: [
+                .init(quantity: "3", name: "pommes"),
+                .init(quantity: "1 tasse", name: "farine")
+            ]
+        )
 
-        XCTAssertNotNil(store.recipes.first?.imageData)
+        let groceryList = GroceryList(recipe: recipe)
+        let payloads = groceryList.reminderPayloads(for: .iga)
+
+        XCTAssertEqual(payloads.count, 2)
+        XCTAssertTrue(payloads[0].title.hasPrefix("3 pommes"))
+        XCTAssertTrue(payloads[0].title.contains("$"))
+        XCTAssertTrue(payloads[0].notes.contains("Recette: Crumble aux pommes"))
+        XCTAssertTrue(payloads[0].notes.contains("Magasin: IGA"))
+        XCTAssertTrue(payloads[0].notes.contains("Prix estime:"))
+        XCTAssertTrue(payloads[0].notes.contains(groceryList.reminderMetadataPrefix(for: .iga)))
+    }
+
+    func testGroceryListReminderPayloadsPreserveCheckedItems() {
+        let recipe = Recipe(
+            name: "Soupe",
+            category: .soupes,
+            ingredients: [.init(quantity: "1 litre", name: "bouillon")]
+        )
+
+        var groceryList = GroceryList(recipe: recipe)
+        groceryList.items[0].isChecked = true
+
+        let payload = try? XCTUnwrap(groceryList.reminderPayloads(for: .metro).first)
+
+        XCTAssertTrue(payload?.title.hasPrefix("1 litre bouillon") == true)
+        XCTAssertTrue(payload?.title.contains("$") == true)
+        XCTAssertEqual(payload?.isCompleted, true)
+    }
+
+    func testRefreshRecipePhotosLoadsLivePhoto() throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    let livePhotoDirectory = directory.appendingPathComponent("RecipePhotos", isDirectory: true)
+    try FileManager.default.createDirectory(at: livePhotoDirectory, withIntermediateDirectories: true)
+    
+    let store = RecipeStore(
+        recipesURL: directory.appendingPathComponent("recipes.json"),
+        groceryListURL: directory.appendingPathComponent("grocery-list.json"),
+        shouldLoadSeedData: false,
+        livePhotoDirectoryURL: livePhotoDirectory,
+        enablePhotoAutoRefresh: false
+    )
+    
+    let recipe = Recipe(name: "Test Photo", category: .plats)
+    store.add(recipe)
+    XCTAssertNil(store.recipes.first?.imageData)
+    
+    let imageURL = livePhotoDirectory.appendingPathComponent("test-photo.jpg")
+    try makeJPEGData().write(to: imageURL)
+    
+    store.refreshRecipePhotosIfNeeded(force: true)
+    
+    XCTAssertNotNil(store.recipes.first?.imageData)
+    }
+
+    func testImportRecipePhotosCopiesMatchingFilesIntoLiveDirectory() throws {
+    let store = try makeStore()
+    store.add(Recipe(name: "Poulet Croustillant", category: .plats))
+    
+    let sourceDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: sourceDirectory, withIntermediateDirectories: true)
+    
+    let sourceURL = sourceDirectory.appendingPathComponent("Poulet Croustillant.png")
+    let pngData = try XCTUnwrap(makeImage(size: CGSize(width: 100, height: 100), color: .systemBlue).pngData())
+    try pngData.write(to: sourceURL)
+    
+    let result = store.importRecipePhotos(from: [sourceURL])
+    
+    XCTAssertEqual(result.importedCount, 1)
+    XCTAssertEqual(result.replacedCount, 0)
+    XCTAssertEqual(result.issueCount, 0)
+    XCTAssertNotNil(store.recipes.first?.imageData)
+    }
+
+    func testImportRecipePhotosSkipsUnmatchedAndInvalidFiles() throws {
+    let store = try makeStore()
+    store.add(Recipe(name: "Soupe du Jour", category: .soupes))
+    
+    let sourceDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: sourceDirectory, withIntermediateDirectories: true)
+    
+    let unmatchedURL = sourceDirectory.appendingPathComponent("Recette Inconnue.jpg")
+    try makeJPEGData().write(to: unmatchedURL)
+    
+    let invalidURL = sourceDirectory.appendingPathComponent("Soupe du Jour.jpg")
+    try Data([0x00, 0x01, 0x02, 0x03]).write(to: invalidURL)
+    
+    let result = store.importRecipePhotos(from: [unmatchedURL, invalidURL])
+    
+    XCTAssertEqual(result.importedCount, 0)
+    XCTAssertEqual(result.unmatchedCount, 1)
+    XCTAssertEqual(result.invalidCount, 1)
+    XCTAssertNil(store.recipes.first?.imageData)
     }
 
     func testLoadDropsInvalidPersistedImageData() throws {

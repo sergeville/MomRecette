@@ -2032,76 +2032,6 @@
     "createdAt": "2026-03-24T21:25:48.696687+00:00"
   },
   {
-    "id": "2370eabd-3993-4256-9583-1d8d270dc7fd",
-    "name": "Curry D",
-    "category": "Plats",
-    "servings": 4,
-    "prepTime": 20,
-    "cookTime": 30,
-    "ingredients": [],
-    "steps": [],
-    "notes": "",
-    "createdAt": "2026-03-24T21:25:48.720704+00:00"
-  },
-  {
-    "id": "64abf9fd-2a2f-4599-9604-68b72de97530",
-    "name": "Date Description Frais Retrait Depot Solde",
-    "category": "Autres",
-    "servings": 4,
-    "prepTime": 20,
-    "cookTime": 30,
-    "ingredients": [
-      {
-        "quantity": "",
-        "name": "DATE \t\tDESCRIPTION \tFRAIS \tRETRAIT \tDEPOT \tSOLDE"
-      },
-      {
-        "quantity": "2",
-        "name": "000"
-      },
-      {
-        "quantity": "",
-        "name": "SOLDE REPORTER\t\t\t\t\t\t\t    0.00"
-      },
-      {
-        "quantity": "2",
-        "name": "5 OCT\tDEPOT AU COMPTOIR\t\t\t  \t437.00\t             437.00"
-      }
-    ],
-    "steps": [
-      "08 NOV\tVIREMENT MANUEL\t\t                      9469.91             9906.91",
-      "08 NOV\tCH # 2\t\t\t       .60\t569.36\t\t\t            9337.55",
-      "15 NOV\tCH # 5\t\t\t       .60\t160.19\t\t\t            9177.36",
-      "15 NOV\tCH # 3\t\t\t       .60\t390.00\t\t\t            8787.36",
-      "20 NOV\tCH # 4\t\t\t       .60\t180.00\t\t\t            8607.36",
-      "30 NOV\tADMINISTRATION\t\t\t    2.40\t\t\t            8604.96",
-      "2001",
-      "23 JAN\tCH # 1\t\t\t        .60\t   43.00\t\t            8561.96",
-      "31 JAN\tFRAIS\t\t\t\t\t       .60\t\t             8561.36",
-      "01 FEV\tFRAIS\t\t\t\t\t     8.00\t\t             8553.36",
-      "20 AVR\tRISTOURNE\t\t\t\t\t\t\t.13        8553.49",
-      "29 MAI\tDEPOT\t\t\t\t\t\t      557.85        9111.34",
-      "31 MAI\tINTERET\t\t\t\t\t\t        10.66        9122.00",
-      "27 JUIN\tCH # 6\t\t\t        .60\t 262.50\t\t             8859.50",
-      "29 JUIN\tFRAIS\t\t\t\t\t       .60\t\t             8858.90",
-      "29 AOUT\tDEPOT\t\t\t\t\t\t       225.55       9084.45",
-      "---------------------------------------------------------------------------------------------------",
-      "65\t    10701.10\t 9084.45",
-      "CH # 1\t\tGHISLAINE (FILLE)\t\t43.00\tTIMBRES ET TELEPHONE",
-      "CH # 2\t\tNOTAIRE\t\t          569.36",
-      "CH # 3\t\tACHILLE\t\t          390.00\tREPAS A LA SALLE        250.00",
-      "LETTRER MONUMENT  140.00",
-      "CH # 4\t\tDIANE\t\t\t\tFLEURS\t\t       180.00",
-      "CH # 5\t\tACHILLE\t\t          160.19\tHYDRO\t\t       148.55",
-      "BELL\t\t   \t         11.64",
-      "CH # 6\t\tMINISTERE DU REVENU   262.50\t\t\t\t       262.50",
-      "FRAIS\t\t\t\t\t\t\t\t         11.60",
-      "65"
-    ],
-    "notes": "",
-    "createdAt": "2026-03-24T21:25:48.743196+00:00"
-  },
-  {
     "id": "4748dd3f-2d63-4344-9bff-889d952be17e",
     "name": "Delicieuse Chaudree de Saumon Jardiniere",
     "category": "Soupes",
@@ -3806,67 +3736,6 @@
     "createdAt": "2026-03-24T21:25:49.615229+00:00"
   },
   {
-    "id": "f657dc0b-37c0-4f33-937b-9c35a4985ef2",
-    "name": "Jeu de des",
-    "category": "Autres",
-    "servings": 4,
-    "prepTime": 20,
-    "cookTime": 30,
-    "ingredients": [
-      {
-        "quantity": "",
-        "name": "On prend 5 des"
-      },
-      {
-        "quantity": "",
-        "name": "Pour marquer les points  faut faire 750"
-      },
-      {
-        "quantity": "",
-        "name": "Le 1 vaut 100"
-      },
-      {
-        "quantity": "",
-        "name": "Le 5 vaut  50"
-      },
-      {
-        "quantity": "3",
-        "name": "# 1 vaut 1000 un de plus double a 2000"
-      },
-      {
-        "quantity": "3",
-        "name": "# 5 vaut  500  un de plus double a 1000"
-      },
-      {
-        "quantity": "3",
-        "name": "# 2 vaut  200  un de plus double a  400"
-      },
-      {
-        "quantity": "3",
-        "name": "# 3 vaut  300   un de plus double a 600"
-      },
-      {
-        "quantity": "3",
-        "name": "# 4 vaut  400   un de plus double a 800"
-      },
-      {
-        "quantity": "",
-        "name": "Le premier arriver a 10000 est gagnant"
-      },
-      {
-        "quantity": "",
-        "name": "Celui qui a 5 des pareils gagne 10000"
-      },
-      {
-        "quantity": "",
-        "name": "Un streigt vaut 750"
-      }
-    ],
-    "steps": [],
-    "notes": "",
-    "createdAt": "2026-03-24T21:25:49.637080+00:00"
-  },
-  {
     "id": "6d6f98e5-03ff-4c57-8be9-bd71e9b0111d",
     "name": "Light And Lively Lobster Salad",
     "category": "Autres",
@@ -3922,10 +3791,6 @@
     "cookTime": 30,
     "ingredients": [
       {
-        "quantity": "",
-        "name": "MARINADE 3"
-      },
-      {
         "quantity": "2",
         "name": "/3 tasse vin rouge"
       },
@@ -3950,7 +3815,10 @@
         "name": "c. à table de poivre"
       }
     ],
-    "steps": [],
+    "steps": [
+      "Mélanger tous les ingrédients.",
+      "Utiliser pour faire mariner la viande avant la cuisson."
+    ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:49.686101+00:00"
   },
@@ -3987,7 +3855,10 @@
         "name": "c. a the chacune marjolaine, origans, sarriette, poivre"
       }
     ],
-    "steps": [],
+    "steps": [
+      "Mélanger tous les ingrédients.",
+      "Utiliser pour faire mariner la viande avant la cuisson."
+    ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:49.712793+00:00"
   },
@@ -4077,7 +3948,10 @@
         "name": "c. a the poivre frais moulu"
       }
     ],
-    "steps": [],
+    "steps": [
+      "Mélanger tous les ingrédients.",
+      "Utiliser pour faire mariner la viande avant la cuisson."
+    ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:49.766232+00:00"
   },
@@ -4124,29 +3998,15 @@
       {
         "quantity": "¼",
         "name": "tsp garlic powder"
-      },
-      {
-        "quantity": "",
-        "name": "PREHEAT OVEN TO 350"
-      },
-      {
-        "quantity": "",
-        "name": "Mix all ingredients together"
-      },
-      {
-        "quantity": "",
-        "name": "Press the mixture into a Teflon loaf pan"
-      },
-      {
-        "quantity": "",
-        "name": "Bake for one hour"
-      },
-      {
-        "quantity": "",
-        "name": "Let cool about 15 minutes before trying"
       }
     ],
-    "steps": [],
+    "steps": [
+      "Preheat oven to 350",
+      "Mix all ingredients together",
+      "Press the mixture into a Teflon loaf pan",
+      "Bake for one hour",
+      "Let cool about 15 minutes before trying"
+    ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:49.820941+00:00"
   },
@@ -4279,23 +4139,18 @@
       {
         "quantity": "1",
         "name": "boite eagle brand"
-      },
-      {
-        "quantity": "",
-        "name": "Faire bouillir et toujours brasser pour 8 minutes."
-      },
-      {
-        "quantity": "",
-        "name": "Mettre une goute de la préparation dans le fond du cornet, ajouter une mini guimauve et remplir le cornet de la préparation."
       }
     ],
-    "steps": [],
+    "steps": [
+      "Faire bouillir et toujours brasser pour 8 minutes.",
+      "Mettre une goute de la préparation dans le fond du cornet, ajouter une mini guimauve et remplir le cornet de la préparation."
+    ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:49.891452+00:00"
   },
   {
     "id": "e09b629d-a722-432f-9a5c-27727b5cbc24",
-    "name": "Mousse a L",
+    "name": "Mousse a l'Erable",
     "category": "Entrées",
     "servings": 4,
     "prepTime": 20,
@@ -4382,14 +4237,30 @@
     "servings": 4,
     "prepTime": 20,
     "cookTime": 30,
-    "ingredients": [],
+    "ingredients": [
+      {
+        "quantity": "½",
+        "name": "tasse de moutarde sèche"
+      },
+      {
+        "quantity": "3",
+        "name": "c.a. table de sucre"
+      },
+      {
+        "quantity": "1",
+        "name": "c. à the de sel"
+      },
+      {
+        "quantity": "½",
+        "name": "tasse d’eau bouillante"
+      },
+      {
+        "quantity": "2",
+        "name": "c. a table de vinaigre de cidre"
+      }
+    ],
     "steps": [
-      "Faire mijoter 10 minutes en brassant régulièrement",
-      "½ tasse de moutarde sèche",
-      "3 c.a. table de sucre",
-      "1 c. à the de sel",
-      "½ tasse d’eau bouillante",
-      "2 c. a table vinaigre de cidre",
+      "Faire mijoter 10 minutes en brassant régulièrement.",
       "Mettre dans un petit pot et refroidir."
     ],
     "notes": "",
@@ -4397,9 +4268,9 @@
   },
   {
     "id": "a59573a1-0c6e-4ec9-b141-5815c8d1e984",
-    "name": "Makes 6 Naan",
+    "name": "Naan",
     "category": "Pâtisseries",
-    "servings": 4,
+    "servings": 6,
     "prepTime": 20,
     "cookTime": 30,
     "ingredients": [
@@ -4441,35 +4312,27 @@
       }
     ],
     "steps": [
-      "INCLUDEPICTURE \"http://ads.nwsource.com/ads/adv.gif\" \\* MERGEFORMATINET",
-      "HYPERLINK \"http://ad.adserverplus.com/click,WQEAAF.dAQBxWgEAbLIAAAIAAAAAAP8AAAAGFAIAAgMaDAIAWxICAI8fAQAAAAAAAAAAAAAAAAAAAAAAAAAAAI0bqEUAAAAA,,http%3A%2F%2Fseattletimes%2Enwsource%2Ecom%2Fhtml%2Ffoodwine%2F2002880433%5Fbread22%2Ehtml,\" \\t \"_blank\"  INCLUDEPICTURE \"http://content.yieldmanager.edgesuite.net/2809/88689/13619482954464ef5135871.gif\" \\* MERGEFORMATINET",
-      "",
       "Sprinkle yeast over warm water in a large bowl.",
       "Stir to dissolve.",
       "Place yogurt in a medium bowl and gradually stir in boiling water.",
       "Let cool to tepid (105 to 115 degrees).",
-      "",
       "Sift together all-purpose and whole-wheat flours.",
       "To make a sponge, stir yogurt mixture into yeast mixture.",
       "Stir in 3 cups flour, ½ cup at a time.",
       "Then stir 2 minutes in the same direction.",
       "Cover with plastic wrap and set aside 30 minutes.",
-      "",
       "Sprinkle oil and salt onto the sponge.",
       "Mix in enough of the remaining flour, ½ cup at a time, to form a dough.",
       "Turn out onto a lightly floured surface and knead until smooth and elastic, adding more flour if the dough is sticky, about 10 minutes.",
-      "",
       "Wash out and lightly oil the large bowl.",
       "Add dough, turning to coat entire surface.",
       "Cover with a damp kitchen towel or plastic wrap and let rise until doubled in volume, about 1 hour.",
       "Position a rack in the lower third of the oven and arrange baking tiles on the rack, leaving a 1-inch space between tiles and oven walls.",
       "Or place a 10-by-14-inch baking sheet in the oven to preheat.",
       "Preheat oven to 450 degrees.",
-      "",
       "Punch dough down and divide into 6 pieces.",
       "Using lightly floured hands, flatten each piece on a lightly floured work surface into a 4-to 5-inch round.",
       "Cover dough rounds with a clean kitchen towel or plastic wrap and let rest 10 minutes.",
-      "",
       "Lightly flour a baker's peel or the back side of a large baking sheet."
     ],
     "notes": "",
@@ -4477,8 +4340,8 @@
   },
   {
     "id": "d25d11dc-2874-4537-a188-f94a464f5026",
-    "name": "Medaillons de Porc Sauce Cremeuse aux Champignons et au Pest",
-    "category": "Desserts",
+    "name": "Medaillons de Porc Sauce Cremeuse aux Champignons et au Pesto",
+    "category": "Plats",
     "servings": 4,
     "prepTime": 20,
     "cookTime": 30,
@@ -4709,7 +4572,7 @@
   },
   {
     "id": "c01e6d02-f637-4dc1-bbe5-d52b4900adc5",
-    "name": "Oeufs Brouilles au Saumon Fume a L",
+    "name": "Oeufs Brouilles au Saumon Fume a l'Aulne",
     "category": "Plats",
     "servings": 4,
     "prepTime": 20,
@@ -4889,8 +4752,8 @@
   },
   {
     "id": "10d75c67-7600-4ca4-bc77-4dc3bea61e1a",
-    "name": "Pate a Fondu Yvette",
-    "category": "Pâtisseries",
+    "name": "Pate a Fondue Yvette",
+    "category": "Fondues",
     "servings": 4,
     "prepTime": 20,
     "cookTime": 30,
@@ -4918,13 +4781,11 @@
       {
         "quantity": "½",
         "name": "tasse biere ou eau"
-      },
-      {
-        "quantity": "",
-        "name": "Tremperzles morceaux de poulets non cuit et faire cuire dans de l’huile"
       }
     ],
-    "steps": [],
+    "steps": [
+      "Tremper les morceaux de poulet non cuits dans la pâte et faire cuire dans l’huile."
+    ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:50.218563+00:00"
   },
@@ -5005,7 +4866,10 @@
         "name": "tasse d’eau glacee"
       }
     ],
-    "steps": [],
+    "steps": [
+      "Mélanger la farine, la poudre à pâte et le sel.",
+      "Incorporer la graisse, puis ajouter les œufs et l’eau glacée pour former une pâte."
+    ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:50.268953+00:00"
   },
@@ -5152,36 +5016,21 @@
     "cookTime": 30,
     "ingredients": [
       {
-        "quantity": "",
-        "name": "Très simple"
-      },
-      {
         "quantity": "1",
         "name": "pqt fromage Philadelphia"
       },
       {
         "quantity": "1",
         "name": "bocaux de salsa"
-      },
-      {
-        "quantity": "",
-        "name": "Mélange les 2"
-      },
-      {
-        "quantity": "",
-        "name": "Étend sur des tortillas, roule les et tu les congèles"
-      },
-      {
-        "quantity": "",
-        "name": "Ensuite: Sort les congeler, coupe en tranche, Mets au four 350 pour 10"
-      },
-      {
-        "quantity": "",
-        "name": "mtes, Mmmmm très bon et simple"
       }
     ],
-    "steps": [],
-    "notes": "",
+    "steps": [
+      "Mélange les 2",
+      "Étend sur des tortillas, roule les et tu les congèles",
+      "Ensuite: Sort les congeler, coupe en tranche, Mets au four 350 pour 10",
+      "mtes, Mmmmm très bon et simple"
+    ],
+    "notes": "Très simple",
     "createdAt": "2026-03-24T21:25:50.369538+00:00"
   },
   {
@@ -5243,58 +5092,22 @@
       {
         "quantity": "",
         "name": "c. à soupe de gingembre frais râpé"
-      },
-      {
-        "quantity": "",
-        "name": "Faire macérer les pétoncles dans le porto blanc 30 minutes, au refrigerateur. Egouter et réserver le liquide."
-      },
-      {
-        "quantity": "",
-        "name": "Dans une casserole, faire sauter et dorer les échalotes dans la moitie du beurre et de l’huile."
-      },
-      {
-        "quantity": "",
-        "name": "Déglacer avec le porto ayant servi à faire macérer les pétoncles et mouiller avec le fumet de poisson."
-      },
-      {
-        "quantity": "",
-        "name": "Faire réduire de moitie de 5 a 10 minutes."
-      },
-      {
-        "quantity": "",
-        "name": "Ajouter la crème, laisser réduire à nouveau quelques minutes, saler et poivrer au gout. Réserver."
-      },
-      {
-        "quantity": "",
-        "name": "CARAMEL AU COGNAC ET AU GINGEMBRE (FACULTATIF)"
-      },
-      {
-        "quantity": "",
-        "name": "Si desirer, preparer le caramel."
-      },
-      {
-        "quantity": "",
-        "name": "Dans une casserole a fond epais porter tous les ingrédients a ébullition et laisser épaissir et réduire une quinzaine de minutes, soit jusqu’a l’obtention d’un caramel onctueux."
-      },
-      {
-        "quantity": "",
-        "name": "Laisser refroidir pour affermir un peu."
-      },
-      {
-        "quantity": "",
-        "name": "Faire poêler les pétoncles dans le reste de beure et d’huile a feu moyen vif 2 minutes de chaque cote."
-      },
-      {
-        "quantity": "",
-        "name": "Partager les pétoncles dans 4 assiettes et napper de la sauce au porto et d’un filet de caramel au cognac et gingembre au gout."
-      },
-      {
-        "quantity": "",
-        "name": "Poivrer."
       }
     ],
-    "steps": [],
-    "notes": "",
+    "steps": [
+      "Faire macérer les pétoncles dans le porto blanc 30 minutes, au refrigerateur. Egouter et réserver le liquide.",
+      "Dans une casserole, faire sauter et dorer les échalotes dans la moitie du beurre et de l’huile.",
+      "Déglacer avec le porto ayant servi à faire macérer les pétoncles et mouiller avec le fumet de poisson.",
+      "Faire réduire de moitie de 5 a 10 minutes.",
+      "Ajouter la crème, laisser réduire à nouveau quelques minutes, saler et poivrer au gout. Réserver.",
+      "Si desirer, preparer le caramel.",
+      "Dans une casserole a fond epais porter tous les ingrédients a ébullition et laisser épaissir et réduire une quinzaine de minutes, soit jusqu’a l’obtention d’un caramel onctueux.",
+      "Laisser refroidir pour affermir un peu.",
+      "Faire poêler les pétoncles dans le reste de beure et d’huile a feu moyen vif 2 minutes de chaque cote.",
+      "Partager les pétoncles dans 4 assiettes et napper de la sauce au porto et d’un filet de caramel au cognac et gingembre au gout.",
+      "Poivrer."
+    ],
+    "notes": "CARAMEL AU COGNAC ET AU GINGEMBRE (FACULTATIF)",
     "createdAt": "2026-03-24T21:25:50.400309+00:00"
   },
   {
@@ -5356,43 +5169,23 @@
       {
         "quantity": "",
         "name": "c.a soupe de beurre"
-      },
-      {
-        "quantity": "",
-        "name": "Verser tous les ingredients de la saumure dans un bol et melanger jusqu'à ce que le sucre et le sel soit dissous."
-      },
-      {
-        "quantity": "",
-        "name": "Deposer la poitrine de dinde et laisser saumurer 3 hres au frigo."
-      },
-      {
-        "quantity": "",
-        "name": "Retirer la dinde et l’eponger avec du papier absorbant,ficeler si desire."
-      },
-      {
-        "quantity": "",
-        "name": "Prechauffer le four a 350"
-      },
-      {
-        "quantity": "",
-        "name": "Dans une grande poele,saisir la poitrine dans l’huile et la retourner pour colorer de toutes parts.Ajouter les echalotes francaises ou oignons."
-      },
-      {
-        "quantity": "",
-        "name": "Cuire 1 hre au centre du four.Ajouter le reste des ingredients sauf le beurre  et poursuivre la cuisson pendant 15 mtes,ou jusqu'à ce que la temperature interne de la dinde atteigne 160f ou 70c.Retirer la dinde du four,la couvrir d’aluminium et laisser reposer15 mtes.La temperature interne continuera a monter jusqu'à 170f ou 70c"
-      },
-      {
-        "quantity": "",
-        "name": "Pendant ce temps,faire reduire le jus de cuisson (sans le passer) 2 minutes a feu eleve.Ajouter les morceaux de beurre froid un a la fois en fouettant.Trancher la dinde,la servir dans le jus de cuisson.Servir avec de la pureee de patates douces et des legumes."
       }
     ],
-    "steps": [],
+    "steps": [
+      "Verser tous les ingredients de la saumure dans un bol et melanger jusqu'à ce que le sucre et le sel soit dissous.",
+      "Deposer la poitrine de dinde et laisser saumurer 3 hres au frigo.",
+      "Retirer la dinde et l’eponger avec du papier absorbant,ficeler si desire.",
+      "Prechauffer le four a 350",
+      "Dans une grande poele,saisir la poitrine dans l’huile et la retourner pour colorer de toutes parts.Ajouter les echalotes francaises ou oignons.",
+      "Cuire 1 hre au centre du four.Ajouter le reste des ingredients sauf le beurre  et poursuivre la cuisson pendant 15 mtes,ou jusqu'à ce que la temperature interne de la dinde atteigne 160f ou 70c.Retirer la dinde du four,la couvrir d’aluminium et laisser reposer15 mtes.La temperature interne continuera a monter jusqu'à 170f ou 70c",
+      "Pendant ce temps,faire reduire le jus de cuisson (sans le passer) 2 minutes a feu eleve.Ajouter les morceaux de beurre froid un a la fois en fouettant.Trancher la dinde,la servir dans le jus de cuisson.Servir avec de la pureee de patates douces et des legumes."
+    ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:50.454385+00:00"
   },
   {
     "id": "0ae35a38-f5b6-4463-8096-7f2e261fb07c",
-    "name": "Pomme de Terre Roties a L",
+    "name": "Pomme de Terre Roties a l'Oignon",
     "category": "Autres",
     "servings": 4,
     "prepTime": 20,
@@ -5641,165 +5434,6 @@
     "createdAt": "2026-03-24T21:25:50.587316+00:00"
   },
   {
-    "id": "885dd680-e9b8-41fc-a49c-449e84537139",
-    "name": "Pour Victor",
-    "category": "Autres",
-    "servings": 4,
-    "prepTime": 20,
-    "cookTime": 30,
-    "ingredients": [
-      {
-        "quantity": "",
-        "name": "Nettoyer piscine"
-      },
-      {
-        "quantity": "",
-        "name": "Balayer cour et jardins"
-      },
-      {
-        "quantity": "",
-        "name": "Entretenir les fleurs, arbres, entrée principale et extérieure"
-      },
-      {
-        "quantity": "",
-        "name": "Allumer les lumières le soir le plus tard possible et changer les ampoules si brûlées"
-      },
-      {
-        "quantity": "",
-        "name": "Entretien et vérification des pompes et des réserves d’eau"
-      },
-      {
-        "quantity": "",
-        "name": "Nettoyer emplacements a déchets"
-      },
-      {
-        "quantity": "",
-        "name": "Détruire les chemins de termites après les murs et les bâtisses"
-      },
-      {
-        "quantity": "",
-        "name": "Tenir la porte d’entrée toujours barrée et éviter de faire entrer des étrangers a l’intérieur."
-      },
-      {
-        "quantity": "",
-        "name": "Surveiller pour que personnes n’écrivent sur les murs car c’est facile de faire des marques"
-      },
-      {
-        "quantity": "",
-        "name": "Avant l’arrivée de locataires ou proprios"
-      },
-      {
-        "quantity": "",
-        "name": "Mettre une bouteille d’eau potable"
-      },
-      {
-        "quantity": "",
-        "name": "Vérifier le fonctionnement du poêle a gas et la bombonne de gas, des robinets, les toilettes, l’air climatise, le frigo et mettre un rouleau de papier de hygiénique"
-      },
-      {
-        "quantity": "",
-        "name": "Vérifier le réservoir d’eau"
-      },
-      {
-        "quantity": "",
-        "name": "Balayer et laver les planchers, enlever les fils d’araignées, les excréments de lézards sur les murs et les coquerelles mortes dans les armoires etc.……"
-      },
-      {
-        "quantity": "",
-        "name": "Nettoyer les ventilateurs et les traites avec de l’huile TEKA."
-      },
-      {
-        "quantity": "",
-        "name": "Laver toutes les vitres et les interrupteurs"
-      },
-      {
-        "quantity": "",
-        "name": "Laver le poêle et le frigo intérieur et extérieur, les comptoirs, les lavabos, la toilette, les miroirs, les équipements dans la cuisine et laver les planchers"
-      },
-      {
-        "quantity": "",
-        "name": "Au départ des gens vérifier pour les bris et les vols et sortir les déchets la journée même"
-      },
-      {
-        "quantity": "",
-        "name": "Ne pas arroser quand il pleut"
-      },
-      {
-        "quantity": "",
-        "name": "En temps normal arroser les fleurs et arbustes qui en ont vraiment besoin"
-      },
-      {
-        "quantity": "",
-        "name": "Laisser faire les arbres."
-      },
-      {
-        "quantity": "",
-        "name": "Une fois par mois"
-      },
-      {
-        "quantity": "",
-        "name": "Ouvrir pour faire aérer"
-      },
-      {
-        "quantity": "",
-        "name": "Faire fonctionner les ventilateurs et les airs climatises"
-      },
-      {
-        "quantity": "",
-        "name": "Nettoyer avec produit la toilette et les lavabos pour éviter la rouille"
-      },
-      {
-        "quantity": "",
-        "name": "Balayer et laver le plancher"
-      },
-      {
-        "quantity": "",
-        "name": "Enlever fils d’araignées et les nids de guêpes et les crottes de lézards sur les murs"
-      },
-      {
-        "quantity": "",
-        "name": "Si insectes mettre produit"
-      },
-      {
-        "quantity": "",
-        "name": "Mettre produit sur ventilateurs (huile)"
-      },
-      {
-        "quantity": "",
-        "name": "Mettre eau et huile dans les drains de plancher"
-      },
-      {
-        "quantity": "",
-        "name": "UNE FOIS L’AN"
-      },
-      {
-        "quantity": "",
-        "name": "-    Laver fenêtres difficiles avec échelle intérieur et extérieur"
-      },
-      {
-        "quantity": "",
-        "name": "Nettoyer stores ou rideaux"
-      },
-      {
-        "quantity": "",
-        "name": "Nettoyer lits et matelas"
-      },
-      {
-        "quantity": "",
-        "name": "Vider eau des réservoirs pour mettre de l’air (près des pompes)"
-      },
-      {
-        "quantity": "",
-        "name": "Nettoyer et couper arbres et fumiger autour du complexe"
-      }
-    ],
-    "steps": [
-      ">> Aucun service, réparations, produits, insecticides, matériels, outil prêté etc.au #5 juge “proprio indésirables qui ne paie pas ses dus” jusqu’a nouvel ordre, même si rémunération .Ignorer ses commentaires et ses demandes."
-    ],
-    "notes": "",
-    "createdAt": "2026-03-24T21:25:50.614724+00:00"
-  },
-  {
     "id": "31fec352-b190-46e7-b1c9-59f61187f0d2",
     "name": "Pain aux Banane",
     "category": "Pâtisseries",
@@ -5945,7 +5579,7 @@
     "id": "d3a6d19b-1386-4234-9b81-6f424b41b58a",
     "name": "Pear And Gorgonzola Mini Pizzas",
     "category": "Pâtisseries",
-    "servings": 4,
+    "servings": 6,
     "prepTime": 20,
     "cookTime": 30,
     "ingredients": [
@@ -5980,100 +5614,30 @@
       {
         "quantity": "2",
         "name": "Tbsps toasted pine nuts (30ml)"
-      },
-      {
-        "quantity": "",
-        "name": "DIRECTIONS:"
-      },
-      {
-        "quantity": "",
-        "name": "Preheat a pizza stone in a 450 degrees F (230 degrees C) oven."
-      },
-      {
-        "quantity": "",
-        "name": "Divide pizza dough into 6 equal portions. Start to form the dough into 6 equal-sized balls."
-      },
-      {
-        "quantity": "",
-        "name": "Work each ball of dough by pulling down the sides and tucking the sides under the bottom of the ball."
-      },
-      {
-        "quantity": "",
-        "name": "Then, using a smooth surface, roll the ball under the palm of your hand until the ball is smooth and firm, about 1 minute."
-      },
-      {
-        "quantity": "",
-        "name": "Place the balls on a lightly oiled baking tray."
-      },
-      {
-        "quantity": "",
-        "name": "Cover with a damp kitchen towel and allow them to rest at room temperature for 12-15 minutes."
-      },
-      {
-        "quantity": "",
-        "name": "(If you are preparing the dough in advance, this is the point of the preparation that the balls can be loosely covered with plastic wrap and refrigerated for 1-2 days)."
-      },
-      {
-        "quantity": "",
-        "name": "To prepare each pizza, place a ball of dough on a lightly floured surface."
-      },
-      {
-        "quantity": "",
-        "name": "Press down on the center of the ball and flatten slightly."
-      },
-      {
-        "quantity": "",
-        "name": "Lightly dust a rolling pin with flour and roll each ball of dough into 4\" circles."
-      },
-      {
-        "quantity": "",
-        "name": "Allow the outer 1/4\" border to be slightly thicker than the center."
-      },
-      {
-        "quantity": "",
-        "name": "Brush the dough lightly with oil and sprinkle evenly with dill and pepper."
-      },
-      {
-        "quantity": "",
-        "name": "Arrange the pear slices on the dough so they slightly overlap."
-      },
-      {
-        "quantity": "",
-        "name": "Crumble gorgonzola overtop and sprinkle equally with pine nuts."
-      },
-      {
-        "quantity": "",
-        "name": "Repeat with remaining pizzas."
-      },
-      {
-        "quantity": "",
-        "name": "Using a pizza paddle (lightly dusted with flour) carefully lift the pizzas onto the preheated pizza stone."
-      },
-      {
-        "quantity": "",
-        "name": "Bake pizzas for 10-12 minutes or until golden brown."
-      },
-      {
-        "quantity": "",
-        "name": "Transfer pizzas to a firm surface and cut into slices with a pizza cutter."
-      },
-      {
-        "quantity": "",
-        "name": "Serve immediately."
       }
     ],
     "steps": [
-      "Yield:  6 HYPERLINK \"javascript:window.print()\"  INCLUDEPICTURE \"http://www.foodtv.ca/images/global/bt_print.gif\" \\* MERGEFORMATINET",
-      "Off-Dry Riesling Pairing Notes",
-      "Description: When a wine is labelled \"off-dry\", it just means it's a little bit sweet.",
-      "Riesling is made in dry, off-dry, and sweeter styles as well.",
-      "This Riesling is quite fruity with flavours of summer peach and ripe apricot, subtle floral aromas, a pleasant touch of sweetness, and crisp, palate-cleansing acidity on the finish.",
-      "Pairing: The Riesling works well with this dish for two reasons.",
-      "First, it balances the sweetness in the pear, and secondly the sweetness rounds out the pungency of the blue cheese.",
-      "Remember that if your dish has some sweetness in it, you need to balance that sweetness in your wine selection, so pick an off-dry wine, or a wine that is fruity enough to make it seem a bit sweet.",
-      "Wine Suggestion: Cave Spring Off Dry Riesling V.Q.A (Niagara Peninsula, Canada)"
+      "Preheat a pizza stone in a 450 degrees F (230 degrees C) oven.",
+      "Divide pizza dough into 6 equal portions. Start to form the dough into 6 equal-sized balls.",
+      "Work each ball of dough by pulling down the sides and tucking the sides under the bottom of the ball.",
+      "Then, using a smooth surface, roll the ball under the palm of your hand until the ball is smooth and firm, about 1 minute.",
+      "Place the balls on a lightly oiled baking tray.",
+      "Cover with a damp kitchen towel and allow them to rest at room temperature for 12-15 minutes.",
+      "(If you are preparing the dough in advance, this is the point of the preparation that the balls can be loosely covered with plastic wrap and refrigerated for 1-2 days).",
+      "To prepare each pizza, place a ball of dough on a lightly floured surface.",
+      "Press down on the center of the ball and flatten slightly.",
+      "Lightly dust a rolling pin with flour and roll each ball of dough into 4\" circles.",
+      "Allow the outer 1/4\" border to be slightly thicker than the center.",
+      "Brush the dough lightly with oil and sprinkle evenly with dill and pepper.",
+      "Arrange the pear slices on the dough so they slightly overlap.",
+      "Crumble gorgonzola overtop and sprinkle equally with pine nuts.",
+      "Repeat with remaining pizzas.",
+      "Using a pizza paddle (lightly dusted with flour) carefully lift the pizzas onto the preheated pizza stone.",
+      "Bake pizzas for 10-12 minutes or until golden brown.",
+      "Transfer pizzas to a firm surface and cut into slices with a pizza cutter.",
+      "Serve immediately."
     ],
-    "notes": "",
+    "notes": "Yield:  6 HYPERLINK \"javascript:window.print()\"  INCLUDEPICTURE \"http://www.foodtv.ca/images/global/bt_print.gif\" \\* MERGEFORMATINET; Off-Dry Riesling Pairing Notes; Description: When a wine is labelled \"off-dry\", it just means it's a little bit sweet.; Riesling is made in dry, off-dry, and sweeter styles as well.; This Riesling is quite fruity with flavours of summer peach and ripe apricot, subtle floral aromas, a pleasant touch of sweetness, and crisp, palate-cleansing acidity on the finish.; Pairing: The Riesling works well with this dish for two reasons.; Wine Suggestion: Cave Spring Off Dry Riesling V.Q.A (Niagara Peninsula, Canada)",
     "createdAt": "2026-03-24T21:25:50.728002+00:00"
   },
   {
@@ -6116,15 +5680,57 @@
     "ingredients": [
       {
         "quantity": "",
-        "name": "Moi je fais revenir mon porc et quand il est bruni j ajoute des petits oignons verts coupés en petits morceaux et de l’ail et 1/2 poivron rouge coupé en petit morceau.Ensuite j’ajoute un peu sauce soya , du poivre, red pepper de Tati, et du bouillon de boeuf mélangé avec de l’eau laisse cuire environ 5 minutes ensuite j’ajoute l’huile de sésame le tofu coupé en petit cube laisse mijoter quelques minutes et je goûte si pas assez fort j’en rajoute et l’huile de sésame la même chose après je l’épaissit avec du corn starch."
+        "name": "porc"
       },
       {
         "quantity": "",
-        "name": "Bonne chance"
+        "name": "petits oignons verts"
+      },
+      {
+        "quantity": "",
+        "name": "ail"
+      },
+      {
+        "quantity": "1/2",
+        "name": "poivron rouge"
+      },
+      {
+        "quantity": "",
+        "name": "sauce soya"
+      },
+      {
+        "quantity": "",
+        "name": "poivre"
+      },
+      {
+        "quantity": "",
+        "name": "red pepper de Tati"
+      },
+      {
+        "quantity": "",
+        "name": "bouillon de boeuf"
+      },
+      {
+        "quantity": "",
+        "name": "eau"
+      },
+      {
+        "quantity": "",
+        "name": "huile de sésame"
+      },
+      {
+        "quantity": "",
+        "name": "tofu coupé en petits cubes"
+      },
+      {
+        "quantity": "",
+        "name": "corn starch"
       }
     ],
-    "steps": [],
-    "notes": "",
+    "steps": [
+      "Moi je fais revenir mon porc et quand il est bruni j ajoute des petits oignons verts coupés en petits morceaux et de l’ail et 1/2 poivron rouge coupé en petit morceau.Ensuite j’ajoute un peu sauce soya , du poivre, red pepper de Tati, et du bouillon de boeuf mélangé avec de l’eau laisse cuire environ 5 minutes ensuite j’ajoute l’huile de sésame le tofu coupé en petit cube laisse mijoter quelques minutes et je goûte si pas assez fort j’en rajoute et l’huile de sésame la même chose après je l’épaissit avec du corn starch."
+    ],
+    "notes": "Bonne chance",
     "createdAt": "2026-03-24T21:25:50.777689+00:00"
   },
   {
@@ -6222,13 +5828,11 @@
       {
         "quantity": "½",
         "name": "tasse vraie mayonnaise"
-      },
-      {
-        "quantity": "",
-        "name": "Croute de tarte non cuite. Cuire a = 350F ½ heure"
       }
     ],
-    "steps": [],
+    "steps": [
+      "Croute de tarte non cuite. Cuire a = 350F ½ heure"
+    ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:51.217146+00:00"
   },
@@ -6327,38 +5931,6 @@
     ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:51.269851+00:00"
-  },
-  {
-    "id": "9fd81f33-548e-4806-97c0-6b40ab7e2977",
-    "name": "Reglements de Montemar",
-    "category": "Autres",
-    "servings": 4,
-    "prepTime": 20,
-    "cookTime": 30,
-    "ingredients": [
-      {
-        "quantity": "",
-        "name": "--------------------------------------------"
-      },
-      {
-        "quantity": "",
-        "name": "A remettre a l’arrivee des clients ou le lendemain"
-      }
-    ],
-    "steps": [
-      "------------------------------------------------------------",
-      "Prendre une douche avant d’aller a la piscine",
-      "Les verres et les bouteilles en vitres sont interdits pres de la psicine",
-      "Il est interdit de courrir autour de la piscine",
-      "Les balles ou les ballons sont interdits a l’interieur du complexe",
-      "Les animaux sont interdits sur le site",
-      "On ne doit pas jeter les papiers hygieniques dans les toilettes",
-      "On doit respecter le mobilier et les equipments dans les condos",
-      "Vous etes respnsable et devez payer lorsque vous brisez quelque chose",
-      "Merci la direction"
-    ],
-    "notes": "",
-    "createdAt": "2026-03-24T21:25:51.296282+00:00"
   },
   {
     "id": "0e1868c7-5128-488f-8d39-1141b8ef7270",
@@ -6698,7 +6270,7 @@
   },
   {
     "id": "821f7af0-1b80-492e-a903-3da8d8da1dfa",
-    "name": "Rum Puch",
+    "name": "Rum Punch",
     "category": "Autres",
     "servings": 4,
     "prepTime": 20,
@@ -6735,17 +6307,12 @@
       {
         "quantity": "",
         "name": "Sliced pineapple or orange"
-      },
-      {
-        "quantity": "",
-        "name": "Put the lime juice, sugar, rum, ice crushed and bitters in cool shaker, and shake together vigourously."
-      },
-      {
-        "quantity": "",
-        "name": "Pour into a glass and serve with grated nutmeg, decorated with a spring of mint or lime leaf, and fresh pineapple  or oranges slices."
       }
     ],
-    "steps": [],
+    "steps": [
+      "Put the lime juice, sugar, rum, ice crushed and bitters in cool shaker, and shake together vigourously.",
+      "Pour into a glass and serve with grated nutmeg, decorated with a spring of mint or lime leaf, and fresh pineapple  or oranges slices."
+    ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:51.444243+00:00"
   },
@@ -6844,7 +6411,7 @@
   },
   {
     "id": "ad2fb136-78dd-44af-8902-ac842931b9c0",
-    "name": "Salade au Fenouil et a L",
+    "name": "Salade au Fenouil et a l'Orange",
     "category": "Salades",
     "servings": 4,
     "prepTime": 20,
@@ -6949,7 +6516,10 @@
         "name": "Un peu dhuile de sesame"
       }
     ],
-    "steps": [],
+    "steps": [
+      "Mélanger le sucre, l’huile, le vinaigre et un peu d’huile de sésame.",
+      "Ajouter les nouilles, le broccoli slaw, les amandes, les graines de tournesol et les échalotes, puis mélanger."
+    ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:51.542387+00:00"
   },
@@ -7140,37 +6710,17 @@
       {
         "quantity": "",
         "name": "Câpres"
-      },
-      {
-        "quantity": "",
-        "name": "Arroser les pétoncles et les crevettes de jus de citron, saler et poivrer légèrement."
-      },
-      {
-        "quantity": "",
-        "name": "Mélanger les pommes de terre et le persil."
-      },
-      {
-        "quantity": "",
-        "name": "Dans un bol, combiner la moutarde avec le vinaigre et le sucre."
-      },
-      {
-        "quantity": "",
-        "name": "Incorporer l’huile d’olive, saler et poivrer et arroser les pommes de terre de cette vinaigrette."
-      },
-      {
-        "quantity": "",
-        "name": "Faire chauffer le beurre dans une poêle et y faire revenir les pétoncles et les crevettes pendant 2 ou 3 minutes."
-      },
-      {
-        "quantity": "",
-        "name": "Repartir sur les pommes de terre."
-      },
-      {
-        "quantity": "",
-        "name": "Garnir de câpres."
       }
     ],
-    "steps": [],
+    "steps": [
+      "Arroser les pétoncles et les crevettes de jus de citron, saler et poivrer légèrement.",
+      "Mélanger les pommes de terre et le persil.",
+      "Dans un bol, combiner la moutarde avec le vinaigre et le sucre.",
+      "Incorporer l’huile d’olive, saler et poivrer et arroser les pommes de terre de cette vinaigrette.",
+      "Faire chauffer le beurre dans une poêle et y faire revenir les pétoncles et les crevettes pendant 2 ou 3 minutes.",
+      "Repartir sur les pommes de terre.",
+      "Garnir de câpres."
+    ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:51.642444+00:00"
   },
@@ -7292,30 +6842,6 @@
     ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:51.690694+00:00"
-  },
-  {
-    "id": "d98dc396-c624-413c-98b6-18263b96b8fe",
-    "name": "Sauce aux Tomates ) de Sergio)",
-    "category": "Sauces",
-    "servings": 4,
-    "prepTime": 20,
-    "cookTime": 30,
-    "ingredients": [],
-    "steps": [
-      "Tomates",
-      "Ail",
-      "Huile d’olive",
-      "Sucre",
-      "Sel",
-      "Basilic frais si possible",
-      "Vin blanc ou Vermouth",
-      "Ebouillanter les tomates et les pelées et les coupées en dés",
-      "Mettre l’huile dans une casserole à fond épais, faire chauffer et ajouter l’ail coupé couper en gros morceaux faire cuire mais pas les faire brûler.",
-      "Ajouter les tomates, le sel, le sucre et le vin blanc et laisser cuire de 15 a 20 minutes en les brassant souvent à la fin de la cuisson ajouter le basilic frais et cuire quelques minutes..",
-      "Bonne chance et bon appétit"
-    ],
-    "notes": "",
-    "createdAt": "2026-03-24T21:25:51.715545+00:00"
   },
   {
     "id": "1dbd5290-ff1b-4465-9500-3fa2cebdc62c",
@@ -7444,7 +6970,7 @@
   },
   {
     "id": "697f0a99-15f2-4dac-8259-e472897bae8e",
-    "name": "Soupe a L",
+    "name": "Soupe a l'Orge et au Boeuf",
     "category": "Soupes",
     "servings": 4,
     "prepTime": 20,
@@ -7811,10 +7337,6 @@
     "cookTime": 30,
     "ingredients": [
       {
-        "quantity": "",
-        "name": "---------------------------------------------"
-      },
-      {
         "quantity": "1",
         "name": "0 tasses bouillon de poulet"
       },
@@ -7845,12 +7367,17 @@
       {
         "quantity": "½",
         "name": "lb tranches de poulet pour fondue chinoise"
+      },
+      {
+        "quantity": "",
+        "name": "feves germees au gout"
+      },
+      {
+        "quantity": "",
+        "name": "feuilles de coriandre au gout"
       }
     ],
     "steps": [
-      "PORTIONS: 4",
-      "feves germees au gout",
-      "feuilles de coriandre au gout.",
       "1-Dans une casserole de taille moyenne, porter a ebullition le bouillon de poulet.",
       "Ajouter la coriandre,le jus de lime,l’huile de sesame, les oignons verts et le gingembre; laisser mijoter 2 a 3 minutes,a feu moyen.",
       "2- Ajouter les vermicelles et les faire cuire quelques minutes, jusqu’a ce qu’ils soient tendres.",
@@ -7868,10 +7395,6 @@
     "prepTime": 20,
     "cookTime": 30,
     "ingredients": [
-      {
-        "quantity": "",
-        "name": "SOUPE WON TON 2"
-      },
       {
         "quantity": "¾",
         "name": "livre de porc hache"
@@ -7910,12 +7433,12 @@
       }
     ],
     "steps": [],
-    "notes": "",
+    "notes": "SOUPE WON TON 2",
     "createdAt": "2026-03-24T21:25:51.946400+00:00"
   },
   {
     "id": "c58ce3fb-d9e1-4b1b-be69-a24614fa2e42",
-    "name": "Souper aux Nouilles a L",
+    "name": "Souper aux Nouilles a l'Oriental",
     "category": "Soupes",
     "servings": 4,
     "prepTime": 20,
@@ -7998,7 +7521,10 @@
         "name": "Spaghetti cuit"
       }
     ],
-    "steps": [],
+    "steps": [
+      "Faire fondre le beurre avec le jus de citron, puis ajouter la crème et le parmesan.",
+      "Assaisonner, mélanger avec le spaghetti cuit et ajouter du gorgonzola au goût."
+    ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:52.017081+00:00"
   },
@@ -8133,40 +7659,53 @@
     "servings": 4,
     "prepTime": 20,
     "cookTime": 30,
-    "ingredients": [],
-    "steps": [
-      "INCLUDEPICTURE \"http://www1.mesrecettes.org/fran/images/global/pixel.gif\" \\* MERGEFORMATINET \u0007Salade de fenouil à la grecque",
-      "INCLUDEPICTURE \"http://www1.mesrecettes.org/fran/images/recettes/1_0/1_1/1_1_1/1_1_1_1/filet_recette.gif\" \\* MERGEFORMATINET",
-      "INCLUDEPICTURE \"http://www1.mesrecettes.org/fran/images/global/pixel.gif\" \\* MERGEFORMATINET",
-      "INCLUDEPICTURE \"http://www1.mesrecettes.org/fran/images/global/pixel.gif\" \\* MERGEFORMATINET  INCLUDEPICTURE \"http://www1.mesrecettes.org/fran/images/recettes/1_0/1_1/1_1_1/1_1_1_1/filet_recette.gif\" \\* MERGEFORMATINET",
-      "INCLUDEPICTURE \"http://www1.mesrecettes.org/fran/images/global/pixel.gif\" \\* MERGEFORMATINET",
-      "INCLUDEPICTURE \"http://www1.mesrecettes.org/fran/images/global/pixel.gif\" \\* MERGEFORMATINET",
-      "INCLUDEPICTURE \"http://www1.mesrecettes.org/Publication/image_recettes/U1566.jpg\" \\* MERGEFORMATINET",
-      "INCLUDEPICTURE \"http://www1.mesrecettes.org/fran/images/recettes/1_0/1_1/1_1_1/1_1_1_1/im_horloge.gif\" \\* MERGEFORMATINET",
-      "15 min",
-      "INCLUDEPICTURE \"http://www1.mesrecettes.org/fran/images/global/pixel.gif\" \\* MERGEFORMATINET",
-      "INCLUDEPICTURE \"http://www1.mesrecettes.org/fran/images/recettes/1_0/1_1/1_1_1/1_1_1_1/im_source.gif\" \\* MERGEFORMATINET",
-      "Les Saisons de Clodine",
-      "INCLUDEPICTURE \"http://www1.mesrecettes.org/fran/images/global/pixel.gif\" \\* MERGEFORMATINET",
-      "INCLUDEPICTURE \"http://www1.mesrecettes.org/fran/images/recettes/1_0/1_1/1_1_1/1_1_1_1/im_logo_fran.gif\" \\* MERGEFORMATINET",
-      "INCLUDEPICTURE \"http://www1.mesrecettes.org/fran/images/global/pixel.gif\" \\* MERGEFORMATINET",
-      "INCLUDEPICTURE \"http://www1.mesrecettes.org/fran/images/recettes/1_0/1_1/1_1_1/1_1_1_1/im_ingredients.gif\" \\* MERGEFORMATINET",
-      "INCLUDEPICTURE \"http://www1.mesrecettes.org/fran/images/global/pixel.gif\" \\* MERGEFORMATINET",
-      "INCLUDEPICTURE \"http://www1.mesrecettes.org/fran/images/global/pixel.gif\" \\* MERGEFORMATINET",
-      "1 petit bulbe de fenouil avec les feuilles",
-      "5 oz (150 g) de fromage Feta canadien coupé en dés",
-      "1 petit oignon rouge émincé finement",
-      "Une vingtaine d'olives kalamata dénoyautées et coupées en deux",
-      "2 tomates bien mûres coupées en dés",
-      "2 c. à thé (10 ml) d'herbes salées du Bas-du-Fleuve* ou d'herbes fraîches",
-      "Le jus d'une lime",
-      "1/2 tasse (125 ml) d'huile d'olive extra vierge",
-      "4 gousses d'ail hachées finement",
-      "Sel et poivre au goût",
-      "INCLUDEPICTURE \"http://www1.mesrecettes.org/fran/images/global/pixel.gif\" \\* MERGEFORMATINET",
-      "INCLUDEPICTURE \"http://www1.mesrecettes.org/fran/images/recettes/1_0/1_1/1_1_1/1_1_1_1/im_prepar.gif\" \\* MERGEFORMATINET"
+    "ingredients": [
+      {
+        "quantity": "",
+        "name": "1 petit bulbe de fenouil avec les feuilles"
+      },
+      {
+        "quantity": "",
+        "name": "5 oz (150 g) de fromage Feta canadien coupé en dés"
+      },
+      {
+        "quantity": "",
+        "name": "1 petit oignon rouge émincé finement"
+      },
+      {
+        "quantity": "",
+        "name": "Une vingtaine d'olives kalamata dénoyautées et coupées en deux"
+      },
+      {
+        "quantity": "",
+        "name": "2 tomates bien mûres coupées en dés"
+      },
+      {
+        "quantity": "",
+        "name": "2 c. à thé (10 ml) d'herbes salées du Bas-du-Fleuve* ou d'herbes fraîches"
+      },
+      {
+        "quantity": "",
+        "name": "Le jus d'une lime"
+      },
+      {
+        "quantity": "",
+        "name": "1/2 tasse (125 ml) d'huile d'olive extra vierge"
+      },
+      {
+        "quantity": "",
+        "name": "4 gousses d'ail hachées finement"
+      },
+      {
+        "quantity": "",
+        "name": "Sel et poivre au goût"
+      }
     ],
-    "notes": "",
+    "steps": [
+      "Mélanger le jus de lime, l’huile d’olive, l’ail et les herbes salées.",
+      "Ajouter le fenouil, le fromage feta, l’oignon rouge, les olives et les tomates. Assaisonner et mélanger."
+    ],
+    "notes": "Source: Les Saisons de Clodine. Preparation time: 15 min",
     "createdAt": "2026-03-24T21:25:52.089415+00:00"
   },
   {
@@ -8216,49 +7755,61 @@
     "servings": 4,
     "prepTime": 20,
     "cookTime": 30,
-    "ingredients": [],
-    "steps": [
-      "¼ tasse d'eau",
-      "¼ tasse jus de citron",
-      "2 c. à soupe sauce au poisson",
-      "2 c. à soupe vinaigre",
-      "2 c. à soupe sucre blanc",
-      "Lamelle de carotte",
-      "2e",
-      "4 c. à soupe soya sauce",
-      "1 c. à soupe de miel",
-      "1 c. à café épices 5 parfums",
-      "3e",
-      "1 c. à soupe oyster sauce",
-      "½ c. thé sésame oil",
-      "½ c. à thé sucre"
+    "ingredients": [
+      {
+        "quantity": "",
+        "name": "Version 1: ¼ tasse d'eau"
+      },
+      {
+        "quantity": "",
+        "name": "Version 1: ¼ tasse jus de citron"
+      },
+      {
+        "quantity": "",
+        "name": "Version 1: 2 c. à soupe sauce au poisson"
+      },
+      {
+        "quantity": "",
+        "name": "Version 1: 2 c. à soupe vinaigre"
+      },
+      {
+        "quantity": "",
+        "name": "Version 1: 2 c. à soupe sucre blanc"
+      },
+      {
+        "quantity": "",
+        "name": "Version 1: Lamelle de carotte"
+      },
+      {
+        "quantity": "",
+        "name": "Version 2: 4 c. à soupe soya sauce"
+      },
+      {
+        "quantity": "",
+        "name": "Version 2: 1 c. à soupe de miel"
+      },
+      {
+        "quantity": "",
+        "name": "Version 2: 1 c. à café épices 5 parfums"
+      },
+      {
+        "quantity": "",
+        "name": "Version 3: 1 c. à soupe oyster sauce"
+      },
+      {
+        "quantity": "",
+        "name": "Version 3: ½ c. thé sésame oil"
+      },
+      {
+        "quantity": "",
+        "name": "Version 3: ½ c. à thé sucre"
+      }
     ],
-    "notes": "",
+    "steps": [
+      "Choisir une des trois versions et mélanger les ingrédients jusqu’à dissolution du sucre."
+    ],
+    "notes": "Contains three ingredient variants for egg roll sauce.",
     "createdAt": "2026-03-24T21:25:52.138557+00:00"
-  },
-  {
-    "id": "07721ec5-1f74-4d66-ad24-84df768cf2c0",
-    "name": "Sauce Tomates ( de Sergio)",
-    "category": "Sauces",
-    "servings": 4,
-    "prepTime": 20,
-    "cookTime": 30,
-    "ingredients": [],
-    "steps": [
-      "Tomates",
-      "Ail",
-      "Huile d’olive",
-      "Sucre",
-      "Sel",
-      "Basilic frais si possible",
-      "Vin blanc ou Vermouth",
-      "Ebouillanter les tomates et les pelees et les coupees en des",
-      "Mettre l’huile dans une casserole a fond epais,faire chauffer et ajouter l’ail coupe couper en gros morceaux faire cuire mais pas les faire bruler.",
-      "Ajouter les tomates,le sel,le sucre et le vin blanc et laisser cuire de 15 a 20 minutes en les brassant souvent a la fin de la cuisson ajouter le basilic frais et cuire quelques minutes..",
-      "Bonne chance et bon appetit"
-    ],
-    "notes": "",
-    "createdAt": "2026-03-24T21:25:52.164739+00:00"
   },
   {
     "id": "dc8f1f34-c844-452a-aee8-91269ae0bae4",
@@ -8480,14 +8031,10 @@
       {
         "quantity": "",
         "name": "Sel"
-      },
-      {
-        "quantity": "",
-        "name": "Jeannine"
       }
     ],
     "steps": [],
-    "notes": "",
+    "notes": "Jeannine",
     "createdAt": "2026-03-24T21:25:52.284253+00:00"
   },
   {
@@ -8532,7 +8079,7 @@
   },
   {
     "id": "bbf1e5bb-b3ff-400c-b190-2fcd99095952",
-    "name": "Tarte au Œufs",
+    "name": "Tarte aux Oeufs",
     "category": "Desserts",
     "servings": 4,
     "prepTime": 20,
@@ -8557,26 +8104,14 @@
       {
         "quantity": "1",
         "name": "c. à the de vanille"
-      },
-      {
-        "quantity": "",
-        "name": "Battre les œufs lentement, ajouter le lait tiède puis la muscade."
-      },
-      {
-        "quantity": "",
-        "name": "Verser dans une croute de tarte non cuite."
-      },
-      {
-        "quantity": "",
-        "name": "Cuire a 450F 10 minute et baisser le feu a 325F continuer la cuisson 35 minutes."
-      },
-      {
-        "quantity": "",
-        "name": "Jacqueline"
       }
     ],
-    "steps": [],
-    "notes": "",
+    "steps": [
+      "Battre les œufs lentement, ajouter le lait tiède puis la muscade.",
+      "Verser dans une croute de tarte non cuite.",
+      "Cuire a 450F 10 minute et baisser le feu a 325F continuer la cuisson 35 minutes."
+    ],
+    "notes": "Jacqueline",
     "createdAt": "2026-03-24T21:25:52.328654+00:00"
   },
   {
@@ -8647,35 +8182,21 @@
       {
         "quantity": "¼",
         "name": "tsp garlic powder"
-      },
-      {
-        "quantity": "",
-        "name": "PREHEAT OVEN TO 350"
-      },
-      {
-        "quantity": "",
-        "name": "Mix all ingredients together"
-      },
-      {
-        "quantity": "",
-        "name": "Press the mixture into a Teflon loaf pan"
-      },
-      {
-        "quantity": "",
-        "name": "Bake for one hour"
-      },
-      {
-        "quantity": "",
-        "name": "Let cool about 15 minutes before trying"
       }
     ],
-    "steps": [],
+    "steps": [
+      "Preheat oven to 350",
+      "Mix all ingredients together",
+      "Press the mixture into a Teflon loaf pan",
+      "Bake for one hour",
+      "Let cool about 15 minutes before trying"
+    ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:52.374264+00:00"
   },
   {
     "id": "bb6e461f-11b8-486b-816c-e5ff155fec26",
-    "name": "Tournedos de Poulet a L",
+    "name": "Tournedos de Poulet a l'Ail",
     "category": "Plats",
     "servings": 4,
     "prepTime": 20,
@@ -8753,17 +8274,12 @@
       {
         "quantity": "2",
         "name": "c. a soupe jus de lime ou vinaigre de riz"
-      },
-      {
-        "quantity": "",
-        "name": "Mélanger tous les ingrédients dans un petit bol."
-      },
-      {
-        "quantity": "",
-        "name": "Servir avec roules de salade"
       }
     ],
-    "steps": [],
+    "steps": [
+      "Mélanger tous les ingrédients dans un petit bol.",
+      "Servir avec roules de salade"
+    ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:52.421801+00:00"
   },
@@ -8841,8 +8357,8 @@
   },
   {
     "id": "277ce7c6-2c00-42ce-904a-355c1199a1e9",
-    "name": "Untitled 1",
-    "category": "Autres",
+    "name": "Pain (tante Desneige)",
+    "category": "Pâtisseries",
     "servings": 4,
     "prepTime": 20,
     "cookTime": 30,
@@ -8877,16 +8393,12 @@
   },
   {
     "id": "fa75ba34-5b5e-496a-97c0-7e231165c349",
-    "name": "Untitled",
+    "name": "Biscuits aux epices a la cuillere (Jeannine)",
     "category": "Autres",
     "servings": 4,
     "prepTime": 20,
     "cookTime": 30,
     "ingredients": [
-      {
-        "quantity": "",
-        "name": "Biscuits aux épices à la cuillère ( Jeannine)"
-      },
       {
         "quantity": "¾ de",
         "name": "tasse de graisse ou de beurre"
@@ -8929,7 +8441,7 @@
       }
     ],
     "steps": [],
-    "notes": "",
+    "notes": "Biscuits aux épices à la cuillère ( Jeannine)",
     "createdAt": "2026-03-24T21:25:52.521522+00:00"
   },
   {
@@ -8989,24 +8501,16 @@
     "cookTime": 30,
     "ingredients": [
       {
-        "quantity": "",
-        "name": "La vinaigrette est tres bonne"
-      },
-      {
-        "quantity": "",
-        "name": "VINAIGRETTE AU SIROP D’ERABLE"
-      },
-      {
         "quantity": "3",
-        "name": "c. a table vinaigre de vin blanc ou de cidre"
+        "name": "c. à table vinaigre de vin blanc ou de cidre"
       },
       {
         "quantity": "2",
-        "name": "c. à the moutarde Dijon"
+        "name": "c. à thé moutarde Dijon"
       },
       {
         "quantity": "4",
-        "name": "c. a table sirop d’érable"
+        "name": "c. à table sirop d’érable"
       },
       {
         "quantity": "½",
@@ -9014,47 +8518,13 @@
       },
       {
         "quantity": "",
-        "name": "Set et poivre"
-      },
-      {
-        "quantity": "",
-        "name": "SALADE D’PINARDS ET POULET GRILLE"
-      },
-      {
-        "quantity": "6",
-        "name": "tasses jeunes feuilles d’épinards"
-      },
-      {
-        "quantity": "2",
-        "name": "/3 tasse radis laves et tranches"
-      },
-      {
-        "quantity": "½",
-        "name": "oignon rouge tanche finement"
-      },
-      {
-        "quantity": "1",
-        "name": "1/2 tasses cerise rouges coupées en deux"
-      },
-      {
-        "quantity": "4",
-        "name": "à 6 blancs de poulet"
-      },
-      {
-        "quantity": "",
-        "name": "Sel, épice, poivre assaisonnement pour la volaille"
-      },
-      {
-        "quantity": "2",
-        "name": "c. à table d’huile"
-      },
-      {
-        "quantity": "",
-        "name": "Noix grilles au choix"
+        "name": "Sel et poivre"
       }
     ],
-    "steps": [],
-    "notes": "",
+    "steps": [
+      "Fouetter tous les ingrédients jusqu’à ce que la vinaigrette soit bien émulsionnée."
+    ],
+    "notes": "Note originale: la vinaigrette est très bonne. La fiche contenait aussi une suggestion de salade d’épinards et poulet grillé.",
     "createdAt": "2026-03-24T21:25:52.566925+00:00"
   },
   {
@@ -9123,7 +8593,9 @@
         "name": "gousses d'ailV"
       }
     ],
-    "steps": [],
+    "steps": [
+      "Fouetter tous les ingrédients jusqu’à ce que la vinaigrette soit bien émulsionnée."
+    ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:52.615443+00:00"
   },
@@ -9156,7 +8628,9 @@
         "name": "Sel et poivre au goût"
       }
     ],
-    "steps": [],
+    "steps": [
+      "Fouetter tous les ingrédients jusqu’à ce que la vinaigrette soit bien émulsionnée."
+    ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:52.638899+00:00"
   },
@@ -9198,18 +8672,6 @@
     ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:52.665743+00:00"
-  },
-  {
-    "id": "16fa8125-7262-4b32-b6a7-cbec23be661e",
-    "name": "Dore",
-    "category": "Plats",
-    "servings": 4,
-    "prepTime": 20,
-    "cookTime": 30,
-    "ingredients": [],
-    "steps": [],
-    "notes": "",
-    "createdAt": "2026-03-24T21:25:52.691170+00:00"
   },
   {
     "id": "54b1ea83-204a-43ff-8902-2156bf93d7cd",
@@ -9292,32 +8754,74 @@
   },
   {
     "id": "6e0b897b-2e1b-49b9-a6dd-ec00a6b6b079",
-    "name": "Thaicurriedchicken",
+    "name": "Thai Curried Chicken",
     "category": "Plats",
     "servings": 4,
     "prepTime": 20,
     "cookTime": 30,
-    "ingredients": [],
+    "ingredients": [
+      {
+        "quantity": "",
+        "name": "5 lbs. large boneless, skinless chicken breasts"
+      },
+      {
+        "quantity": "",
+        "name": "1/4 cup vegetable oil"
+      },
+      {
+        "quantity": "",
+        "name": "3 large onions, thinly sliced"
+      },
+      {
+        "quantity": "",
+        "name": "1/4 cup Thai red curry paste"
+      },
+      {
+        "quantity": "",
+        "name": "1/4 cup granulated sugar"
+      },
+      {
+        "quantity": "",
+        "name": "1/3 cup fish sauce"
+      },
+      {
+        "quantity": "",
+        "name": "3 tablespoons finely grated lime zest"
+      },
+      {
+        "quantity": "",
+        "name": "2 tablespoons minced garlic"
+      },
+      {
+        "quantity": "",
+        "name": "3 3/4 cups regular coconut milk"
+      },
+      {
+        "quantity": "",
+        "name": "5  14 oz. cans drained California Cling Peach Slices"
+      },
+      {
+        "quantity": "",
+        "name": "5 cups snow peas, julienned"
+      },
+      {
+        "quantity": "",
+        "name": "5 red peppers, julienned"
+      },
+      {
+        "quantity": "",
+        "name": "2 1/2 cups green onions, sliced thinly on the bias"
+      },
+      {
+        "quantity": "",
+        "name": "2 1/2 cups chiffonade of Thai or regular basil leaves"
+      },
+      {
+        "quantity": "",
+        "name": "3/4 cup chopped fresh coriander"
+      }
+    ],
     "steps": [
-      "• INCLUDEPICTURE \"http://www.calclingpeach.com/images/6.10.02.recipie_titles/thai_chicken.gif\" \\* MERGEFORMATINET",
-      "Courtesy of the California Cling Peach Board",
-      "Servings: 10",
-      "5 lbs. large boneless, skinless chicken breasts",
-      "•  1/4 cup vegetable oil",
-      "•  3 large onions, thinly sliced",
-      "•  1/4 cup Thai red curry paste",
-      "•  1/4 cup granulated sugar",
-      "•  1/3 cup fish sauce",
-      "•  3 tablespoons finely grated lime zest",
-      "•  2 tablespoons minced garlic",
-      "•  3 3/4 cups regular coconut milk",
-      "•  5  14 oz. cans drained California Cling Peach Slices",
-      "•  5 cups snow peas, julienned",
-      "•  5 red peppers, julienned",
-      "•  2 1/2 cups green onions, sliced thinly on the bias",
-      "•  2 1/2 cups chiffonade of Thai or regular basil leaves",
-      "•  3/4 cup chopped fresh coriander",
-      "Directions:",
       "Cut the chicken into 3/4-inch cubes; divide into ten portions, 8 ounces each, and place in a hotel pan, separated by pieces of butcher paper.",
       "Cover tightly and reserve.",
       "Prepare mis-en-place as indicated above, placing each ingredient in a bain marie insert.",
@@ -9330,7 +8834,7 @@
       "red curry paste, 1 1/2 tsp.",
       "sugar, 2 tsp."
     ],
-    "notes": "",
+    "notes": "Courtesy of the California Cling Peach Board",
     "createdAt": "2026-03-24T21:25:52.765338+00:00"
   }
 ]

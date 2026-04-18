@@ -1,10 +1,18 @@
 import SwiftUI
 
 struct GroceryListView: View {
+    private struct ExportAlert: Identifiable {
+        let id = UUID()
+        let title: String
+        let message: String
+    }
+
     @EnvironmentObject var store: RecipeStore
     @Environment(\.dismiss) var dismiss
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var selectedStore: GroceryList.ExportStore = .store
+    @State private var isExportingToReminders = false
+    @State private var exportAlert: ExportAlert?
 
     private var groceryList: GroceryList? {
         store.currentGroceryList
@@ -58,12 +66,28 @@ struct GroceryListView: View {
             }
             .navigationTitle("Liste d'épicerie")
             .navigationBarTitleDisplayMode(.inline)
+            .alert(item: $exportAlert) { alert in
+                Alert(
+                    title: Text(alert.title),
+                    message: Text(alert.message),
+                    dismissButton: .default(Text("OK"))
+                )
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Fermer") { dismiss() }
                 }
                 if groceryList != nil {
                     ToolbarItemGroup(placement: .navigationBarTrailing) {
+                        Button {
+                            exportToReminders()
+                        } label: {
+                            Label(isExportingToReminders ? "Envoi..." : "Rappels", systemImage: "checklist")
+                        }
+                        .disabled(isExportingToReminders)
+                        .accessibilityLabel("Envoyer vers Rappels")
+                        .help("Envoyer la liste vers Apple Rappels")
+
                         if let groceryList {
                             ShareLink(
                                 item: groceryList.exportText(for: selectedStore),
@@ -87,7 +111,7 @@ struct GroceryListView: View {
 
     private var storeSelectionStrip: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Exporter pour")
+            Text("Prix et export pour")
                 .font(.headline)
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -122,9 +146,10 @@ struct GroceryListView: View {
                 groceryStat("\(groceryList.items.count)", label: "articles")
                 groceryStat("\(groceryList.remainingItemCount)", label: "restants")
                 groceryStat("\(groceryList.items.filter(\.isChecked).count)", label: "pris")
+                groceryStat(groceryList.estimatedTotalText(for: selectedStore), label: "total estimé")
             }
 
-            Text("Le partage inclut les quantites et le magasin selectionne.")
+            Text("Rappels et le partage incluent les quantites, le magasin et un prix estime.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -208,6 +233,10 @@ struct GroceryListView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+
+                    Text("Prix estimé: \(item.estimatedPrice(for: selectedStore), format: .currency(code: "CAD"))")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(item.isChecked ? .secondary : kindTint(kind))
                 }
 
                 Spacer(minLength: 0)
@@ -252,6 +281,29 @@ struct GroceryListView: View {
         case .grains: return .yellow
         case .pantry: return .indigo
         case .other: return .gray
+        }
+    }
+
+    private func exportToReminders() {
+        guard !isExportingToReminders else { return }
+
+        isExportingToReminders = true
+
+        Task {
+            do {
+                let exportedCount = try await store.exportCurrentGroceryListToReminders(for: selectedStore)
+                exportAlert = ExportAlert(
+                    title: "Envoye vers Rappels",
+                    message: "\(exportedCount) article(s) ajoutes dans la liste \(store.currentGroceryList?.reminderListName(for: selectedStore) ?? "MomRecette")."
+                )
+            } catch {
+                exportAlert = ExportAlert(
+                    title: "Export Rappels impossible",
+                    message: error.localizedDescription
+                )
+            }
+
+            isExportingToReminders = false
         }
     }
 }

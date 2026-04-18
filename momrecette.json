@@ -218,16 +218,12 @@
   },
   {
     "id": "cbe4ba5b-c5ec-44cf-b28a-a92d80cb2dfd",
-    "name": "Beignes Soeur Berthe (jacqueline-leon",
+    "name": "Beignes Soeur Berthe (Jacqueline-Leon)",
     "category": "Pâtisseries",
     "servings": 4,
     "prepTime": 20,
     "cookTime": 30,
     "ingredients": [
-      {
-        "quantity": "",
-        "name": "BEIGNES (SOEUR BERTHE)"
-      },
       {
         "quantity": "½",
         "name": "tasse beurre"
@@ -271,14 +267,9 @@
       "Incorporer dans le premier mélange en alternant avec le mélange de lait et de crème.",
       "Mettre la pate dans un plat et recouvrir de papier cire et laisser reposer toute la nuit.",
       "Abaisser la pate assez épaisse et tailler a l’emporte piece.",
-      "Faire cuire en pleine friture.",
-      "1 thermomètre",
-      "Un emporte pièce",
-      "Un gros chaudron",
-      "2 litre huile Crisco",
-      "JACQUELINE et LEON"
+      "Faire cuire en pleine friture."
     ],
-    "notes": "",
+    "notes": "Équipement suggéré: 1 thermomètre, un emporte-pièce, un gros chaudron, 2 litres d'huile Crisco. Source: Jacqueline et Leon.",
     "createdAt": "2026-03-24T21:25:47.799617+00:00"
   },
   {
@@ -691,17 +682,45 @@
     "servings": 4,
     "prepTime": 20,
     "cookTime": 30,
-    "ingredients": [],
+    "ingredients": [
+      {
+        "quantity": "4",
+        "name": "tasses de bouillon de poulet"
+      },
+      {
+        "quantity": "1",
+        "name": "petit morceau de gingembre haché"
+      },
+      {
+        "quantity": "2",
+        "name": "branches de céleri émincées"
+      },
+      {
+        "quantity": "1",
+        "name": "carotte émincée en fins bâtonnets"
+      },
+      {
+        "quantity": "",
+        "name": "quelques champignons émincés"
+      },
+      {
+        "quantity": "1",
+        "name": "tasse de pois verts surgelés"
+      },
+      {
+        "quantity": "4",
+        "name": "échalotes vertes"
+      },
+      {
+        "quantity": "2",
+        "name": "feuilles de laitue chinoise émincées"
+      }
+    ],
     "steps": [
-      "Dans une casserole réunir 4 tasses de bouillon de poulet",
-      "1 petit morceau de gingembre hache",
-      "2 branches de céleri émincées",
-      "1 carotte émince coupe en fin bâtonnet et quelque champignon émince",
-      "Cuire environ 10minutes.",
-      "Ajouter 1 tasse de pois verts surgelés",
-      "4 échalotes vertes",
-      "2 ou feuilles de laitue chinoise émincée",
-      "Cuire 2 à 3 minutes"
+      "Dans une casserole, réunir le bouillon de poulet, le gingembre, le céleri, la carotte et les champignons.",
+      "Cuire environ 10 minutes.",
+      "Ajouter les pois verts, les échalotes vertes et la laitue chinoise.",
+      "Cuire 2 à 3 minutes."
     ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:48.037028+00:00"
@@ -8877,16 +8896,12 @@
   },
   {
     "id": "fa75ba34-5b5e-496a-97c0-7e231165c349",
-    "name": "Untitled",
+    "name": "Biscuits aux épices à la cuillère (Jeannine)",
     "category": "Autres",
     "servings": 4,
     "prepTime": 20,
     "cookTime": 30,
     "ingredients": [
-      {
-        "quantity": "",
-        "name": "Biscuits aux épices à la cuillère ( Jeannine)"
-      },
       {
         "quantity": "¾ de",
         "name": "tasse de graisse ou de beurre"

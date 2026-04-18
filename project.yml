@@ -8,6 +8,8 @@ options:
 
 settings:
   base:
+    DEVELOPMENT_TEAM: 8GTRA62F55
+    CODE_SIGN_STYLE: Automatic
     PRODUCT_BUNDLE_IDENTIFIER: com.villeneuves.MomRecette
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "1"
@@ -16,6 +18,7 @@ settings:
     TARGETED_DEVICE_FAMILY: "1,2"   # iPhone + iPad (Mac Catalyst handles Mac)
     INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Choisir une photo pour la recette"
     INFOPLIST_KEY_NSCameraUsageDescription: "Prendre une photo du plat"
+    INFOPLIST_KEY_NSRemindersUsageDescription: "Envoyer la liste d'epicerie vers Rappels"
 
 targets:
   MomRecette:
@@ -25,6 +28,8 @@ targets:
 
     settings:
       base:
+        DEVELOPMENT_TEAM: 8GTRA62F55
+        CODE_SIGN_STYLE: Automatic
         PRODUCT_BUNDLE_IDENTIFIER: com.villeneuves.MomRecette
         SWIFT_VERSION: "5.9"
         SUPPORTS_MACCATALYST: YES
@@ -32,30 +37,45 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Choisir une photo pour la recette"
         INFOPLIST_KEY_NSCameraUsageDescription: "Prendre une photo du plat"
+        INFOPLIST_KEY_NSRemindersUsageDescription: "Envoyer la liste d'epicerie vers Rappels"
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
 
     sources:
-      - path: .
-        excludes:
-          - "**/*.md"
-          - "*.json"
-          - "*.py"
-          - "*.yml"
-          - "MomRecette.xcodeproj/**"
-          - "MomRecetteTests/**"
+      - path: App
+      - path: Models
+      - path: ViewModels
+      - path: Views
+      - path: Assets.xcassets
+        buildPhase: resources
+      - path: Resources
+        buildPhase: resources
+
+    fileGroups:
+      - Info.plist
+      - scripts
 
     info:
       path: Info.plist
       properties:
         CFBundleDisplayName: MomRecette
         CFBundleName: MomRecette
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
         UILaunchScreen: {}
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: true
           UISceneConfigurations: {}
         NSPhotoLibraryUsageDescription: "Choisir une photo pour la recette"
         NSCameraUsageDescription: "Prendre une photo du plat"
+        NSRemindersUsageDescription: "Envoyer la liste d'epicerie vers Rappels"
 
     scheme:
       testTargets:
@@ -64,6 +84,12 @@ targets:
   MomRecetteTests:
     type: bundle.unit-test
     platform: iOS
+    settings:
+      base:
+        DEVELOPMENT_TEAM: 8GTRA62F55
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.villeneuves.MomRecetteTests
     sources: MomRecetteTests
     dependencies:
       - target: MomRecette
