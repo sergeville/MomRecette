@@ -7,10 +7,24 @@ struct ContentView: View {
     @State private var showAdd = false
     @State private var showImport = false
     @State private var showSearch = false
+    @State private var showGroceryList = false
     @State private var splitSelectedRecipe: Recipe? = nil
 
     // iPad/Mac: sidebar-based layout
     @Environment(\.horizontalSizeClass) var hSizeClass
+
+    private var remainingGroceryItemCount: Int? {
+        guard let currentGroceryList = store.currentGroceryList else { return nil }
+        return currentGroceryList.remainingItemCount
+    }
+
+    private var groceryAccessibilityLabel: String {
+        if let remainingGroceryItemCount {
+            return "Liste d'épicerie, \(remainingGroceryItemCount) article\(remainingGroceryItemCount > 1 ? "s" : "") restant\(remainingGroceryItemCount > 1 ? "s" : "")"
+        }
+
+        return "Liste d'épicerie"
+    }
 
     var body: some View {
         Group {
@@ -19,6 +33,9 @@ struct ContentView: View {
             } else {
                 deckLayout
             }
+        }
+        .sheet(isPresented: $showGroceryList) {
+            GroceryListView()
         }
     }
 
@@ -51,12 +68,15 @@ struct ContentView: View {
             .toolbar {
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
                     Button {
-                        withAnimation { showSearch.toggle()
+                        withAnimation {
+                            showSearch.toggle()
                             if !showSearch { store.searchText = "" }
                         }
                     } label: {
                         Image(systemName: showSearch ? "xmark.circle.fill" : "magnifyingglass")
                     }
+
+                    groceryToolbarButton
 
                     Menu {
                         Button { showAdd = true } label: {
@@ -87,6 +107,7 @@ struct ContentView: View {
             SplitSidebarView()
                 .toolbar {
                     ToolbarItemGroup(placement: .primaryAction) {
+                        groceryToolbarButton
                         Button { showAdd = true } label: { Image(systemName: "plus") }
                         Button { showImport = true } label: { Image(systemName: "square.and.arrow.down") }
                     }
@@ -102,6 +123,16 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showAdd) { AddEditRecipeView() }
         .sheet(isPresented: $showImport) { ImportView() }
+    }
+
+    private var groceryToolbarButton: some View {
+        Button {
+            showGroceryList = true
+        } label: {
+            GroceryToolbarLabel(remainingItemCount: remainingGroceryItemCount)
+        }
+        .accessibilityLabel(groceryAccessibilityLabel)
+        .help(groceryAccessibilityLabel)
     }
 }
 
@@ -191,6 +222,29 @@ private struct FilterChip: View {
                 .background(isSelected ? Color.accentColor : Color(UIColor.secondarySystemBackground))
                 .foregroundStyle(isSelected ? .white : .primary)
                 .clipShape(Capsule())
+        }
+    }
+}
+
+private struct GroceryToolbarLabel: View {
+    let remainingItemCount: Int?
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Image(systemName: remainingItemCount == nil ? "cart" : "cart.fill")
+
+            if let remainingItemCount {
+                Text("\(remainingItemCount)")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, remainingItemCount >= 10 ? 5 : 4)
+                    .padding(.vertical, 2)
+                    .background(
+                        Capsule()
+                            .fill(remainingItemCount == 0 ? Color.green : Color.accentColor)
+                    )
+                    .offset(x: 10, y: -8)
+            }
         }
     }
 }
