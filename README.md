@@ -79,6 +79,70 @@ open MomRecette.xcodeproj
 
 Ou ouvrir `MomRecette.xcodeproj` directement dans Xcode et lancer sur simulateur ou appareil.
 
+## Hygiène du dépôt
+
+Les surfaces suivies par git doivent rester limitées au code produit, aux ressources du bundle, aux scripts réutilisables et à leur documentation.
+
+Les chemins locaux suivants sont maintenant considérés comme hors dépôt:
+
+- `.env` pour les secrets locaux
+- `build/` pour les workspaces temporaires de packaging
+- `dist/` pour les artefacts DMG / IPA
+- `local/` pour les fichiers de scratch et exports ad hoc
+- `recipe_card_ai_cli/output/` pour les images générées par le CLI Python
+
+Le détail de cette convention est documenté dans [docs/LOCAL_WORKSPACE.md](docs/LOCAL_WORKSPACE.md).
+
+## Packaging macOS DMG
+
+Le script `scripts/package_momrecette_dmg.sh` produit maintenant deux artefacts dans `dist/`:
+
+- `MomRecette-<version>-<build>.dmg` pour l'archive de release
+- `MomRecette.dmg` comme alias stable vers la dernière build packagée
+
+Le DMG contient l'app Mac Catalyst, un raccourci `Applications`, un `README.txt`, un `PACKAGE_INFO.txt` avec les métadonnées de release, `MomRecette Data.zip` quand des données live existent dans le conteneur local, et une fenêtre Finder personnalisée avec fond graphique et positions d'icônes fixes.
+
+L'archive contient le contenu complet de `Documents`, y compris la base de recettes JSON et le dossier `RecipePhotos`. L'installeur décompresse ensuite cette archive avant de remplacer le contenu de `~/Library/Containers/com.villeneuves.MomRecette/Data/Documents`.
+
+```bash
+./scripts/package_momrecette_dmg.sh
+```
+
+Par défaut, le script désactive la signature Xcode pour permettre un build local du DMG sans certificat `Mac Development`. Vous pouvez réactiver la signature avec `XCODE_CODE_SIGNING_ALLOWED=YES XCODE_CODE_SIGNING_REQUIRED=YES`.
+
+Pour une mise à niveau, remplacez l'app existante dans `Applications`. Si vous exécutez `Install MomRecette Data.command`, le script confirme l'opération, sauvegarde les données actuelles sur le Bureau, décompresse `MomRecette Data.zip`, puis remplace le contenu de `~/Library/Containers/com.villeneuves.MomRecette/Data/Documents`. Le script DMG crée d'abord une image writable, applique la mise en page Finder, puis convertit le résultat en UDZO final.
+
+## Packaging iPhone IPA
+
+Le script `scripts/package_sergeiphone_ipa.sh` produit maintenant un export iPhone signé nommé `sergeiPhone`:
+
+- `sergeiPhone-<version>-<build>.ipa` pour l'archive de release
+- `sergeiPhone.ipa` comme alias stable
+- `sergeiPhone-PACKAGE_INFO.txt` avec les métadonnées d'export
+
+Ce script prépare un workspace temporaire, remplace le seed bundle par les données live du conteneur quand elles existent, puis archive et exporte l'app iOS. En pratique:
+
+- `momrecette.json` live devient le seed `momrecette_bundle.json`
+- `momrecette-grocery-list.json` live est inclus comme seed de liste d'épicerie
+- `RecipePhotos/` live est fusionné par-dessus les photos bundle pour le build iPhone
+
+```bash
+./scripts/package_sergeiphone_ipa.sh
+```
+
+Prérequis:
+
+- signature iPhone valide dans Xcode
+- provisioning profile compatible avec votre iPhone 15
+
+Si Xcode doit régénérer les profils automatiquement, exécutez:
+
+```bash
+ALLOW_PROVISIONING_UPDATES=YES ./scripts/package_sergeiphone_ipa.sh
+```
+
+L'artefact `.ipa` sert à l'installation iPhone; l'installation sur l'appareil passe ensuite par un flux iOS signé, par exemple via Xcode Organizer, Apple Configurator ou TestFlight selon votre profil de distribution.
+
 ## Format JSON d'import
 
 ```json
@@ -168,3 +232,13 @@ python3 scripts/batch_recipe_photos.py --apply /tmp/momrecette-missing-photos.cs
 
 Le script batch écrit un CSV pour toutes les recettes sans photo, puis applique en masse les fichiers locaux ou URLs d'images que vous renseignez.
 Il peut aussi ouvrir les recherches Google Images à partir des vrais titres présents dans MomRecette.
+
+## Outil compagnon local `recipe_card_ai_cli`
+
+Le générateur Python de cartes de recette peut vivre dans `recipe_card_ai_cli/` comme workspace local compagnon.
+
+- ce dossier est considéré comme local-only et ignoré par git
+- les environnements virtuels et builds Python restent locaux
+- les images générées doivent être déposées dans `recipe_card_ai_cli/output/`
+
+Si vous gardez ce workspace local, conservez sa propre documentation directement dans `recipe_card_ai_cli/README.md`.

@@ -88,3 +88,57 @@ Suggested workflow:
 See also:
 
 - `recipe_photo_manifest.example.csv`
+
+## `recipe_card_generator.py`
+
+Create a local recipe-card style image from a title, ingredient list, and optional dish photo.
+
+Examples:
+
+```bash
+python3 scripts/recipe_card_generator.py \
+  --title "Bifteck de Flan Farci" \
+  --ingredients "2 bifteck de flan;2 c. a table de margarine;2 gros oignons haches finement" \
+  --output local/examples/bifteck_recipe.png
+
+python3 scripts/recipe_card_generator.py \
+  --title "Bifteck de Flan Farci" \
+  --ingredients-file /tmp/ingredients.txt \
+  --photo /tmp/dish.jpg \
+  --output local/examples/bifteck_recipe.png
+```
+
+Notes:
+
+- this is a local Pillow-based generator
+- keep one-off outputs in `local/` instead of the repo root
+- use `recipe_card_ai_cli/` when you want the OpenAI-backed image workflow
+
+
+## `package_sergeiphone_ipa.sh`
+
+Archive and export an iPhone installable build named `sergeiPhone`.
+
+Examples:
+
+```bash
+./scripts/package_sergeiphone_ipa.sh
+ALLOW_PROVISIONING_UPDATES=YES ./scripts/package_sergeiphone_ipa.sh
+IOS_EXPORT_METHOD=ad-hoc ./scripts/package_sergeiphone_ipa.sh
+```
+
+This script:
+
+- prepares a temporary export workspace so the repo is not mutated
+- seeds the iPhone build from the live `Documents` payload when available
+- exports `dist/sergeiPhone-<version>-<build>.ipa`
+- refreshes `dist/sergeiPhone.ipa`
+- writes `dist/sergeiPhone-PACKAGE_INFO.txt`
+
+## Packaging assets
+
+Reusable packaging assets belong under `scripts/assets/`.
+
+Current tracked asset:
+
+- `scripts/assets/momrecette-dmg-background.png`

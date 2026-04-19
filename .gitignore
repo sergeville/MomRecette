@@ -4,6 +4,7 @@
 *.xcodeproj/project.xcworkspace/xcuserdata/
 DerivedData/
 build/
+dist/
 *.ipa
 *.dSYM.zip
 *.dSYM
@@ -17,6 +18,21 @@ build/
 __pycache__/
 *.pyc
 *.pyo
+
+# Local secrets
+.env
+
+# Local workspace scratch area
+local/
+b.txt
+
+# Companion recipe-card CLI local artifacts
+recipe_card_ai_cli/
+recipe_card_ai_cli/.venv/
+recipe_card_ai_cli/build/
+recipe_card_ai_cli/*.egg-info/
+recipe_card_ai_cli/output/
+recipe_card_ai_cli_package.zip
 
 # JSON data (not source)
 momrecette copy.json
