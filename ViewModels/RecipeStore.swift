@@ -6,6 +6,45 @@ import EventKit
 
 @MainActor
 class RecipeStore: ObservableObject {
+    enum RecipeCollection: Hashable, Identifiable {
+        case all
+        case favorites
+        case category(Recipe.Category)
+
+        var id: String {
+            switch self {
+            case .all:
+                return "all"
+            case .favorites:
+                return "favorites"
+            case .category(let category):
+                return "category-\(category.rawValue)"
+            }
+        }
+
+        var title: String {
+            switch self {
+            case .all:
+                return "Toutes les recettes"
+            case .favorites:
+                return "Favoris"
+            case .category(let category):
+                return category.rawValue
+            }
+        }
+
+        var systemImage: String {
+            switch self {
+            case .all:
+                return "square.grid.2x2"
+            case .favorites:
+                return "star.fill"
+            case .category:
+                return "tag"
+            }
+        }
+    }
+
     struct RecipePhotoBatchImportResult {
         var importedCount = 0
         var replacedCount = 0
@@ -47,7 +86,7 @@ class RecipeStore: ObservableObject {
     @Published var recipes: [Recipe] = []
     @Published var currentGroceryList: GroceryList?
     @Published var searchText: String = ""
-    @Published var selectedCategory: Recipe.Category? = nil
+    @Published var selectedCollection: RecipeCollection = .all
 
     private let saveURL: URL
     private let groceryListURL: URL
@@ -109,9 +148,16 @@ class RecipeStore: ObservableObject {
 
     var filteredRecipes: [Recipe] {
         var list = recipes
-        if let cat = selectedCategory {
-            list = list.filter { $0.category == cat }
+
+        switch selectedCollection {
+        case .all:
+            break
+        case .favorites:
+            list = list.filter(\.isFavorite)
+        case .category(let category):
+            list = list.filter { $0.category == category }
         }
+
         if !searchText.isEmpty {
             let q = searchText.lowercased()
             list = list.filter {
@@ -127,6 +173,17 @@ class RecipeStore: ObservableObject {
         let sorted = filteredRecipes
         let grouped = Dictionary(grouping: sorted) { $0.firstLetter }
         return grouped.sorted { $0.key < $1.key }
+    }
+
+    var favoriteCount: Int {
+        recipes.filter(\.isFavorite).count
+    }
+
+    var recentRecipes: [Recipe] {
+        recipes
+            .sorted { $0.createdAt > $1.createdAt }
+            .prefix(6)
+            .map { $0 }
     }
 
     // MARK: - CRUD
@@ -157,6 +214,11 @@ class RecipeStore: ObservableObject {
                 }
             }
 
+            if let existingCardFilename = existing.recipeCardFilename,
+               recipe.recipeCardFilename != existingCardFilename {
+                try? recipeImageStorage.deleteImage(named: existingCardFilename)
+            }
+
             recipes[idx] = Self.sanitizedRecipe(candidate, source: "update")
             save()
         }
@@ -166,6 +228,9 @@ class RecipeStore: ObservableObject {
         if let photoFilename = recipe.photoFilename {
             try? recipeImageStorage.deleteImage(named: photoFilename)
         }
+        if let recipeCardFilename = recipe.recipeCardFilename {
+            try? recipeImageStorage.deleteImage(named: recipeCardFilename)
+        }
         recipes.removeAll { $0.id == recipe.id }
         save()
     }
@@ -174,6 +239,9 @@ class RecipeStore: ObservableObject {
     let ids = offsets.map { list[$0].id }
     let recipesToDelete = recipes.filter { ids.contains($0.id) }
     recipesToDelete.compactMap(\.photoFilename).forEach { filename in
+        try? recipeImageStorage.deleteImage(named: filename)
+    }
+    recipesToDelete.compactMap(\.recipeCardFilename).forEach { filename in
         try? recipeImageStorage.deleteImage(named: filename)
     }
     recipes.removeAll { ids.contains($0.id) }
@@ -241,6 +309,12 @@ class RecipeStore: ObservableObject {
     func createGroceryList(for recipe: Recipe) {
         currentGroceryList = GroceryList(recipe: recipe)
         saveGroceryList()
+    }
+
+    func toggleFavorite(for recipe: Recipe) {
+        guard let index = recipes.firstIndex(where: { $0.id == recipe.id }) else { return }
+        recipes[index].isFavorite.toggle()
+        save()
     }
 
     func toggleGroceryItem(id: UUID) {
@@ -312,24 +386,54 @@ class RecipeStore: ObservableObject {
             mode: mode,
             extraDetail: extraDetail
         )
-        let storedImage = try recipeImageStorage.replaceImage(
-            imageData,
-            for: currentRecipe,
-            replacing: currentRecipe.photoFilename
-        )
-
-        var updated = currentRecipe
-        updated.photoFilename = storedImage.filename
-        updated.generatedImagePrompt = recipeImagePromptBuilder.buildPrompt(
+        let prompt = recipeImagePromptBuilder.buildPrompt(
             for: currentRecipe,
             mode: mode,
             extraDetail: extraDetail
         )
-        updated.generatedImageMode = mode.rawValue
-        updated.imageData = storedImage.data
+
+        var updated = currentRecipe
+
+        switch mode {
+        case .dishPhoto:
+            let storedImage = try recipeImageStorage.replaceImage(
+                imageData,
+                for: currentRecipe,
+                replacing: currentRecipe.photoFilename
+            )
+            updated.photoFilename = storedImage.filename
+            updated.generatedImagePrompt = prompt
+            updated.generatedImageMode = mode.rawValue
+            updated.imageData = storedImage.data
+        case .recipeCard:
+            let storedCard = try recipeImageStorage.replaceImage(
+                imageData,
+                for: currentRecipe,
+                replacing: currentRecipe.recipeCardFilename
+            )
+            updated.recipeCardFilename = storedCard.filename
+            updated.generatedRecipeCardPrompt = prompt
+        }
 
         recipes[index] = Self.sanitizedRecipe(updated, source: "generated image")
         save()
+    }
+
+    func recipeImageURL(for recipe: Recipe) -> URL? {
+        guard let filename = recipe.photoFilename else { return nil }
+        let url = recipeImageStorage.imageURL(for: filename)
+        return FileManager.default.fileExists(atPath: url.path) ? url : nil
+    }
+
+    func recipeCardImageData(for recipe: Recipe) -> Data? {
+        guard let filename = recipe.recipeCardFilename else { return nil }
+        return recipeImageStorage.loadImage(named: filename)
+    }
+
+    func recipeCardImageURL(for recipe: Recipe) -> URL? {
+        guard let filename = recipe.recipeCardFilename else { return nil }
+        let url = recipeImageStorage.imageURL(for: filename)
+        return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
 
     // MARK: - Persistence
@@ -619,13 +723,28 @@ class RecipeStore: ObservableObject {
     }
 
     private static func sanitizedRecipe(_ recipe: Recipe, source: String) -> Recipe {
-        guard let imageData = recipe.imageData else { return recipe }
-        guard let validated = validatedImageData(imageData, source: source, name: recipe.name) else {
-            var sanitized = recipe
+        var sanitized = recipe
+
+        if let caloriesPerServing = sanitized.caloriesPerServing, caloriesPerServing <= 0 {
+            sanitized.caloriesPerServing = nil
+        }
+
+        if sanitized.generatedImageMode == RecipeImageMode.recipeCard.rawValue,
+           sanitized.recipeCardFilename == nil,
+           let legacyCardFilename = sanitized.photoFilename {
+            sanitized.recipeCardFilename = legacyCardFilename
+            sanitized.generatedRecipeCardPrompt = sanitized.generatedImagePrompt
+            sanitized.photoFilename = nil
+            sanitized.generatedImagePrompt = nil
+            sanitized.generatedImageMode = nil
+            sanitized.imageData = nil
+        }
+
+        guard let imageData = sanitized.imageData else { return sanitized }
+        guard let validated = validatedImageData(imageData, source: source, name: sanitized.name) else {
             sanitized.imageData = nil
             return sanitized
         }
-        var sanitized = recipe
         sanitized.imageData = validated
         return sanitized
     }

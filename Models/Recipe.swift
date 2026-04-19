@@ -8,6 +8,7 @@ struct Recipe: Identifiable, Codable, Hashable {
     var name: String
     var category: Category
     var servings: Int = 4
+    var caloriesPerServing: Int?
     var prepTime: Int = 15       // minutes
     var cookTime: Int = 30       // minutes
     var ingredients: [Ingredient] = []
@@ -16,6 +17,9 @@ struct Recipe: Identifiable, Codable, Hashable {
     var photoFilename: String?
     var generatedImagePrompt: String?
     var generatedImageMode: String?
+    var recipeCardFilename: String?
+    var generatedRecipeCardPrompt: String?
+    var isFavorite: Bool = false
     var notes: String = ""
     var createdAt: Date = Date()
 
@@ -214,6 +218,75 @@ struct Recipe: Identifiable, Codable, Hashable {
     }
 }
 
+extension Recipe {
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case category
+        case servings
+        case caloriesPerServing
+        case prepTime
+        case cookTime
+        case ingredients
+        case steps
+        case imageData
+        case photoFilename
+        case generatedImagePrompt
+        case generatedImageMode
+        case recipeCardFilename
+        case generatedRecipeCardPrompt
+        case isFavorite
+        case notes
+        case createdAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        name = try container.decode(String.self, forKey: .name)
+        category = try container.decodeIfPresent(Category.self, forKey: .category) ?? .autres
+        servings = try container.decodeIfPresent(Int.self, forKey: .servings) ?? 4
+        caloriesPerServing = try container.decodeIfPresent(Int.self, forKey: .caloriesPerServing)
+        prepTime = try container.decodeIfPresent(Int.self, forKey: .prepTime) ?? 15
+        cookTime = try container.decodeIfPresent(Int.self, forKey: .cookTime) ?? 30
+        ingredients = try container.decodeIfPresent([Ingredient].self, forKey: .ingredients) ?? []
+        steps = try container.decodeIfPresent([String].self, forKey: .steps) ?? []
+        imageData = try container.decodeIfPresent(Data.self, forKey: .imageData)
+        photoFilename = try container.decodeIfPresent(String.self, forKey: .photoFilename)
+        generatedImagePrompt = try container.decodeIfPresent(String.self, forKey: .generatedImagePrompt)
+        generatedImageMode = try container.decodeIfPresent(String.self, forKey: .generatedImageMode)
+        recipeCardFilename = try container.decodeIfPresent(String.self, forKey: .recipeCardFilename)
+        generatedRecipeCardPrompt = try container.decodeIfPresent(String.self, forKey: .generatedRecipeCardPrompt)
+        isFavorite = try container.decodeIfPresent(Bool.self, forKey: .isFavorite) ?? false
+        notes = try container.decodeIfPresent(String.self, forKey: .notes) ?? ""
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(category, forKey: .category)
+        try container.encode(servings, forKey: .servings)
+        try container.encodeIfPresent(caloriesPerServing, forKey: .caloriesPerServing)
+        try container.encode(prepTime, forKey: .prepTime)
+        try container.encode(cookTime, forKey: .cookTime)
+        try container.encode(ingredients, forKey: .ingredients)
+        try container.encode(steps, forKey: .steps)
+        try container.encodeIfPresent(imageData, forKey: .imageData)
+        try container.encodeIfPresent(photoFilename, forKey: .photoFilename)
+        try container.encodeIfPresent(generatedImagePrompt, forKey: .generatedImagePrompt)
+        try container.encodeIfPresent(generatedImageMode, forKey: .generatedImageMode)
+        try container.encodeIfPresent(recipeCardFilename, forKey: .recipeCardFilename)
+        try container.encodeIfPresent(generatedRecipeCardPrompt, forKey: .generatedRecipeCardPrompt)
+        try container.encode(isFavorite, forKey: .isFavorite)
+        try container.encode(notes, forKey: .notes)
+        try container.encode(createdAt, forKey: .createdAt)
+    }
+}
+
 enum RecipeImageMode: String, CaseIterable, Codable, Identifiable {
     case recipeCard
     case dishPhoto
@@ -235,6 +308,15 @@ enum RecipeImageMode: String, CaseIterable, Codable, Identifiable {
             return "Styled card with title, ingredients, and optional instructions."
         case .dishPhoto:
             return "Luxury plated dish photo with no ingredient list text."
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .recipeCard:
+            return "text.rectangle.page"
+        case .dishPhoto:
+            return "fork.knife.circle"
         }
     }
 }
@@ -397,6 +479,7 @@ extension Recipe {
             name: "Pouding Chômeur",
             category: .desserts,
             servings: 8,
+            caloriesPerServing: 540,
             prepTime: 15,
             cookTime: 35,
             ingredients: [
@@ -425,6 +508,7 @@ extension Recipe {
             name: "Crétons Quatre Générations",
             category: .entrees,
             servings: 12,
+            caloriesPerServing: 260,
             prepTime: 20,
             cookTime: 180,
             ingredients: [
@@ -450,6 +534,7 @@ extension Recipe {
             name: "Soupe Thaïlandaise",
             category: .soupes,
             servings: 4,
+            caloriesPerServing: 320,
             prepTime: 20,
             cookTime: 25,
             ingredients: [
@@ -476,6 +561,7 @@ extension Recipe {
             name: "Tarte au Sucre",
             category: .desserts,
             servings: 8,
+            caloriesPerServing: 470,
             prepTime: 20,
             cookTime: 40,
             ingredients: [
@@ -499,6 +585,7 @@ extension Recipe {
             name: "Sauce à Spaghetti de Sergio",
             category: .sauces,
             servings: 8,
+            caloriesPerServing: 210,
             prepTime: 30,
             cookTime: 240,
             ingredients: [
@@ -527,6 +614,7 @@ extension Recipe {
             name: "Fondue Thaïe",
             category: .fondues,
             servings: 6,
+            caloriesPerServing: 390,
             prepTime: 30,
             cookTime: 20,
             ingredients: [
@@ -553,6 +641,7 @@ extension Recipe {
             name: "Croquilles St-Jacques",
             category: .entrees,
             servings: 4,
+            caloriesPerServing: 410,
             prepTime: 25,
             cookTime: 20,
             ingredients: [
@@ -580,6 +669,7 @@ extension Recipe {
             name: "Poulet aux Pommes et à l'Érable",
             category: .plats,
             servings: 4,
+            caloriesPerServing: 480,
             prepTime: 15,
             cookTime: 45,
             ingredients: [

@@ -363,6 +363,26 @@ final class MomRecetteTests: XCTestCase {
         XCTAssertEqual(regeneratedStore.recipes.first?.imageData, store.recipes.first?.imageData)
     }
 
+    func testRecipeCardGenerationDoesNotReplaceDishPhoto() async throws {
+        let store = try makeStore(
+            recipeImageGenerator: MockRecipeImageGenerator(imageData: makeJPEGData())
+        )
+        var recipe = Recipe(name: "Tarte fine", category: .desserts)
+        recipe.imageData = makeJPEGData()
+        store.add(recipe)
+
+        let originalPhotoData = try XCTUnwrap(store.recipes.first?.imageData)
+        let storedRecipe = try XCTUnwrap(store.recipes.first)
+
+        try await store.generateRecipeImage(for: storedRecipe, mode: .recipeCard, extraDetail: "parchment")
+
+        let updated = try XCTUnwrap(store.recipes.first)
+        XCTAssertEqual(updated.imageData, originalPhotoData)
+        XCTAssertNil(updated.photoFilename)
+        XCTAssertNotNil(updated.recipeCardFilename)
+        XCTAssertTrue(updated.generatedRecipeCardPrompt?.contains("parchment") == true)
+    }
+
     func testRecipeImageIssueMapsMissingAPIKeyToStableDiagnosticID() {
         let issue = RecipeImageIssue.from(OpenAIRecipeImageGenerator.GenerationError.missingAPIKey)
 
@@ -443,5 +463,130 @@ final class MomRecetteTests: XCTestCase {
         let rendered = try XCTUnwrap(UIImage(data: try XCTUnwrap(data)))
         XCTAssertEqual(rendered.cgImage?.width, Int(RecipePhotoImport.cropOutputSize.width))
         XCTAssertEqual(rendered.cgImage?.height, Int(RecipePhotoImport.cropOutputSize.height))
+    }
+
+    func testRecipeDecodingDefaultsFavoriteToFalseWhenFieldIsMissing() throws {
+        let json = """
+        {
+          "id": "\(UUID())",
+          "name": "Gratin test",
+          "category": "Plats",
+          "servings": 4,
+          "prepTime": 20,
+          "cookTime": 35,
+          "ingredients": [],
+          "steps": [],
+          "notes": ""
+        }
+        """.data(using: .utf8)!
+
+        let decoded = try JSONDecoder().decode(Recipe.self, from: json)
+
+        XCTAssertFalse(decoded.isFavorite)
+    }
+
+    func testRecipeDecodingLeavesCaloriesNilWhenFieldIsMissing() throws {
+        let json = """
+        {
+          "id": "\(UUID())",
+          "name": "Gratin test",
+          "category": "Plats",
+          "servings": 4,
+          "prepTime": 20,
+          "cookTime": 35,
+          "ingredients": [],
+          "steps": [],
+          "notes": ""
+        }
+        """.data(using: .utf8)!
+
+        let decoded = try JSONDecoder().decode(Recipe.self, from: json)
+
+        XCTAssertNil(decoded.caloriesPerServing)
+    }
+
+    func testStorePersistsCaloriesPerServing() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+
+        let recipesURL = directory.appendingPathComponent("recipes.json")
+        let groceryURL = directory.appendingPathComponent("grocery.json")
+        let livePhotoURL = directory.appendingPathComponent("RecipePhotos")
+        let recipeImagesURL = directory.appendingPathComponent("RecipeImages", isDirectory: true)
+
+        let store = RecipeStore(
+            recipesURL: recipesURL,
+            groceryListURL: groceryURL,
+            shouldLoadSeedData: false,
+            livePhotoDirectoryURL: livePhotoURL,
+            enablePhotoAutoRefresh: false,
+            recipeImageStorage: RecipeImageStorage(directoryURL: recipeImagesURL)
+        )
+        let recipe = Recipe(name: "Pates au pesto", category: .plats, caloriesPerServing: 620)
+
+        store.add(recipe)
+
+        let reloaded = RecipeStore(
+            recipesURL: recipesURL,
+            groceryListURL: groceryURL,
+            shouldLoadSeedData: false,
+            livePhotoDirectoryURL: livePhotoURL,
+            enablePhotoAutoRefresh: false,
+            recipeImageStorage: RecipeImageStorage(directoryURL: recipeImagesURL)
+        )
+
+        XCTAssertEqual(reloaded.recipes.first?.caloriesPerServing, 620)
+    }
+
+    func testToggleFavoriteUpdatesRecipeState() throws {
+        let store = try makeStore()
+        let recipe = Recipe(name: "Pates au pesto", category: .plats)
+        store.add(recipe)
+
+        store.toggleFavorite(for: recipe)
+        XCTAssertEqual(store.favoriteCount, 1)
+        XCTAssertEqual(store.recipes.first?.isFavorite, true)
+
+        let updatedRecipe = try XCTUnwrap(store.recipes.first)
+        store.toggleFavorite(for: updatedRecipe)
+        XCTAssertEqual(store.favoriteCount, 0)
+        XCTAssertEqual(store.recipes.first?.isFavorite, false)
+    }
+
+    func testLegacyRecipeCardAttachmentMigratesOutOfHeroPhotoSlot() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let recipesURL = directory.appendingPathComponent("recipes.json")
+
+        let legacyRecipe = Recipe(
+            name: "Brie fondant",
+            category: .entrees,
+            ingredients: [],
+            steps: [],
+            imageData: makeJPEGData(),
+            photoFilename: "legacy-card.png",
+            generatedImagePrompt: "card prompt",
+            generatedImageMode: RecipeImageMode.recipeCard.rawValue
+        )
+
+        let data = try JSONEncoder().encode([legacyRecipe])
+        try data.write(to: recipesURL)
+
+        let store = RecipeStore(
+            recipesURL: recipesURL,
+            groceryListURL: directory.appendingPathComponent("grocery.json"),
+            shouldLoadSeedData: false,
+            livePhotoDirectoryURL: directory.appendingPathComponent("RecipePhotos"),
+            enablePhotoAutoRefresh: false,
+            recipeImageStorage: RecipeImageStorage(
+                directoryURL: directory.appendingPathComponent("RecipeImages", isDirectory: true)
+            )
+        )
+
+        let migrated = try XCTUnwrap(store.recipes.first)
+        XCTAssertNil(migrated.photoFilename)
+        XCTAssertNil(migrated.imageData)
+        XCTAssertEqual(migrated.recipeCardFilename, "legacy-card.png")
+        XCTAssertEqual(migrated.generatedRecipeCardPrompt, "card prompt")
     }
 }

@@ -277,6 +277,7 @@ struct LenientRecipe: Codable {
     var name: String
     var category: String?
     var servings: Int?
+    var caloriesPerServing: Int?
     var prepTime: Int?
     var cookTime: Int?
     var ingredients: [LenientIngredient]?
@@ -293,6 +294,7 @@ struct LenientRecipe: Codable {
             name: name,
             category: Recipe.Category(rawValue: category ?? "") ?? .autres,
             servings: servings ?? 4,
+            caloriesPerServing: caloriesPerServing,
             prepTime: prepTime ?? 15,
             cookTime: cookTime ?? 30,
             ingredients: (ingredients ?? []).map {

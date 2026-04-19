@@ -1,27 +1,52 @@
 import SwiftUI
+import UIKit
 
-// MARK: - Recipe Detail Sheet
+enum RecipeWorkspaceSection: String, CaseIterable, Identifiable {
+    case overview = "Apercu"
+    case ingredients = "Ingredients"
+    case steps = "Etapes"
+    case cardExport = "Export"
+    case notes = "Notes"
+
+    var id: String { rawValue }
+
+    var systemImage: String {
+        switch self {
+        case .overview:
+            return "sparkles"
+        case .ingredients:
+            return "checklist"
+        case .steps:
+            return "list.number"
+        case .cardExport:
+            return "square.and.arrow.up"
+        case .notes:
+            return "note.text"
+        }
+    }
+}
+
+enum IngredientPresentation: String, CaseIterable, Identifiable {
+    case checklist = "Checklist"
+    case recipeCard = "Recipe Card"
+
+    var id: String { rawValue }
+}
 
 struct RecipeDetailView: View {
-    private enum IngredientPanel: String, CaseIterable, Identifiable {
-        case text = "Texte"
-        case card = "Carte"
-
-        var id: String { rawValue }
-    }
-
-    @EnvironmentObject var store: RecipeStore
-    @Environment(\.dismiss) var dismiss
+    @EnvironmentObject private var store: RecipeStore
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    @State private var selectedSection: RecipeWorkspaceSection = MomRecetteSetup.RecipeWorkspace.defaultSection
+    @State private var ingredientPresentation: IngredientPresentation = .checklist
+    @State private var checkedIngredientIDs: Set<UUID> = []
     @State private var showEdit = false
     @State private var showDeleteAlert = false
     @State private var showGroceryList = false
     @State private var showGenerateImageSheet = false
-    @State private var ingredientPanel: IngredientPanel = .text
-    @State private var ingredientCardData: Data?
-    @State private var ingredientCardSourceName: String?
-    @State private var isGeneratingIngredientCard = false
-    @State private var ingredientCardError: String?
+    @State private var showCookingMode = false
+    @State private var sharePayload: SharePayload?
 
     let recipe: Recipe
 
@@ -30,658 +55,1060 @@ struct RecipeDetailView: View {
     }
 
     private var heroHeight: CGFloat {
-        horizontalSizeClass == .regular ? 420 : 360
+        horizontalSizeClass == .regular ? 320 : 250
     }
 
-    private var featuredIngredientGroups: [Recipe.IngredientGroup] {
-        Array(current.ingredientGroups.prefix(3))
+    private var currentImage: UIImage? {
+        guard let data = current.imageData else { return nil }
+        return UIImage(data: data)
     }
 
-    private var ingredientCardLookupSignature: String {
-        current.ingredientCardLookupKeys.joined(separator: "|")
+    private var recipeCardImage: UIImage? {
+        guard let data = store.recipeCardImageData(for: current) else { return nil }
+        return UIImage(data: data)
     }
 
-    private var ingredientCardImage: UIImage? {
-        guard let ingredientCardData else { return nil }
-        return UIImage(data: ingredientCardData)
+    private var exportImageURL: URL? {
+        store.recipeImageURL(for: current)
+    }
+
+    private var recipeCardImageURL: URL? {
+        store.recipeCardImageURL(for: current)
+    }
+
+    private var generatedModeTitle: String? {
+        guard let rawValue = current.generatedImageMode,
+              let mode = RecipeImageMode(rawValue: rawValue) else { return nil }
+        return mode.title
+    }
+
+    private var preferredIngredientPresentation: IngredientPresentation {
+        MomRecetteSetup.RecipeWorkspace.defaultIngredientPresentation(hasRecipeCard: recipeCardImage != nil)
+    }
+
+    private var recipeShareText: String {
+        let ingredientSummary = current.ingredients.prefix(6).map(\.name).joined(separator: ", ")
+        let metadataSegments = [
+            "\(current.prepTime.timeString) de preparation",
+            "\(current.cookTime.timeString) de cuisson",
+            "\(current.servings) portions",
+            current.caloriesPerServing.map { "\($0) kcal par portion" }
+        ].compactMap { $0 }
+
+        return """
+        \(current.name)
+
+        \(metadataSegments.joined(separator: ", ")).
+
+        Ingredients: \(ingredientSummary)
+        """
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    // ── Hero Photo ──────────────────────────
-                    heroImage
+        ScrollView {
+            VStack(alignment: .leading, spacing: 22) {
+                RecipeHeroHeaderView(
+                    recipe: current,
+                    image: currentImage,
+                    height: heroHeight
+                )
 
-                    // ── Info Bar ────────────────────────────
-                    infoBar
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 16)
+                VStack(alignment: .leading, spacing: 18) {
+                    RecipeMetaHeaderView(recipe: current)
 
-                    ingredientOverview
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 20)
+                    RecipeActionBar(
+                        recipe: current,
+                        selectedSection: $selectedSection,
+                        onEdit: { showEdit = true },
+                        onShare: {
+                            sharePayload = SharePayload(items: [recipeShareText])
+                        },
+                        onToggleFavorite: { store.toggleFavorite(for: current) },
+                        onOpenGrocery: {
+                            store.createGroceryList(for: current)
+                            showGroceryList = true
+                        },
+                        onOpenCooking: { showCookingMode = true }
+                    )
 
-                    groceryListButton
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 20)
+                    WorkspaceSectionPicker(selection: $selectedSection)
 
-                    Divider()
-
-                    // ── Ingredients ─────────────────────────
-                    Section {
-                        VStack(alignment: .leading, spacing: 16) {
-                            Picker("Affichage des ingrédients", selection: $ingredientPanel) {
-                                ForEach(IngredientPanel.allCases) { panel in
-                                    Text(panel.rawValue).tag(panel)
-                                }
-                            }
-                            .pickerStyle(.segmented)
-
-                            if ingredientPanel == .text {
-                                ingredientTextPanel
-                            } else {
-                                ingredientCardPanel
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 16)
-                    } header: {
-                        sectionHeader("Ingrédients", icon: "list.bullet")
-                    }
-
-                    Divider()
-
-                    // ── Steps ───────────────────────────────
-                    Section {
-                        VStack(alignment: .leading, spacing: 16) {
-                            ForEach(Array(current.steps.enumerated()), id: \.offset) { i, step in
-                                HStack(alignment: .top, spacing: 14) {
-                                    ZStack {
-                                        Circle()
-                                            .fill(current.category.color)
-                                            .frame(width: 28, height: 28)
-                                        Text("\(i + 1)")
-                                            .font(.caption)
-                                            .fontWeight(.bold)
-                                            .foregroundStyle(.white)
-                                    }
-                                    Text(step)
-                                        .font(.body)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                    Spacer()
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 16)
-                    } header: {
-                        sectionHeader("Préparation", icon: "checklist")
-                    }
-
-                    // ── Notes ───────────────────────────────
-                    if !current.notes.isEmpty {
-                        Divider()
-                        Section {
-                            Text(current.notes)
-                                .font(.body)
-                                .foregroundStyle(.secondary)
-                                .italic()
-                                .padding(.horizontal, 20)
-                                .padding(.bottom, 16)
-                        } header: {
-                            sectionHeader("Notes", icon: "note.text")
-                        }
-                    }
-
-                    Spacer(minLength: 40)
+                    sectionContent
                 }
+                .padding(.horizontal, horizontalSizeClass == .regular ? 28 : 20)
+                .padding(.bottom, 28)
             }
-            .ignoresSafeArea(edges: .top)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Fermer") { dismiss() }
+        }
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle(current.name)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+                GenerateRecipeImageButton {
+                    showGenerateImageSheet = true
                 }
-                ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    GenerateRecipeImageButton {
-                        showGenerateImageSheet = true
-                    }
 
-                    Menu {
-                        Button { showEdit = true } label: {
-                            Label("Modifier", systemImage: "pencil")
-                        }
-                        Divider()
-                        Button(role: .destructive) {
-                            showDeleteAlert = true
-                        } label: {
-                            Label("Supprimer", systemImage: "trash")
-                        }
+                Menu {
+                    Button {
+                        showEdit = true
                     } label: {
-                        Image(systemName: "ellipsis.circle")
+                        Label("Modifier", systemImage: "pencil")
                     }
+
+                    Button {
+                        selectedSection = .cardExport
+                    } label: {
+                        Label("Aller a l'export", systemImage: "square.and.arrow.up")
+                    }
+
+                    Divider()
+
+                    Button(role: .destructive) {
+                        showDeleteAlert = true
+                    } label: {
+                        Label("Supprimer", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
                 }
             }
-            .sheet(isPresented: $showGenerateImageSheet) {
-                GenerateRecipeImageSheet(recipe: current)
-            }
-            .sheet(isPresented: $showEdit) {
-                AddEditRecipeView(recipe: current)
-            }
-            .sheet(isPresented: $showGroceryList) {
-                GroceryListView()
-            }
-            .alert("Supprimer cette recette ?", isPresented: $showDeleteAlert) {
+        }
+        .sheet(isPresented: $showGenerateImageSheet) {
+            GenerateRecipeImageSheet(store: store, recipe: current)
+        }
+        .sheet(isPresented: $showEdit) {
+            AddEditRecipeView(recipe: current)
+        }
+        .sheet(isPresented: $showGroceryList) {
+            GroceryListView()
+        }
+        .fullScreenCover(isPresented: $showCookingMode) {
+            CookingModeView(recipe: current)
+        }
+        .alert("Supprimer cette recette ?", isPresented: $showDeleteAlert) {
                 Button("Supprimer", role: .destructive) {
                     store.delete(current)
                     dismiss()
                 }
-                Button("Annuler", role: .cancel) {}
-            }
-            .task(id: ingredientCardLookupSignature) {
-                loadIngredientCardIfAvailable()
-                if ingredientPanel == .card {
-                    await generateIngredientCardIfNeeded()
-                }
-            }
-            .onChange(of: ingredientPanel) { panel in
-                guard panel == .card else { return }
-                Task {
-                    await generateIngredientCardIfNeeded()
-                }
-            }
+            Button("Annuler", role: .cancel) {}
+        } message: {
+            Text("Cette action retire la recette et son image generee si elle existe.")
+        }
+        .onAppear {
+            ingredientPresentation = preferredIngredientPresentation
+        }
+        .onChange(of: current.id) { _ in
+            checkedIngredientIDs.removeAll()
+            ingredientPresentation = preferredIngredientPresentation
+            selectedSection = MomRecetteSetup.RecipeWorkspace.defaultSection
         }
     }
-
-    // MARK: - Sub-Views
 
     @ViewBuilder
-    private var heroImage: some View {
-        ZStack(alignment: .bottomLeading) {
-            if let data = current.imageData, let ui = UIImage(data: data) {
-                posterPhoto(ui)
-            } else {
-                fallbackHeroPoster
-            }
-
-            heroOverlayContent
+    private var sectionContent: some View {
+        switch selectedSection {
+        case .overview:
+            RecipeOverviewPanel(recipe: current)
+        case .ingredients:
+            IngredientChecklistPanel(
+                selectedPresentation: $ingredientPresentation,
+                recipe: current,
+                checkedIngredientIDs: $checkedIngredientIDs,
+                recipeCardImage: recipeCardImage,
+                onGenerateRecipeCard: {
+                    showGenerateImageSheet = true
+                    ingredientPresentation = .recipeCard
+                }
+            )
+        case .steps:
+            ProcedureStepsPanel(
+                recipe: current,
+                onOpenCooking: { showCookingMode = true }
+            )
+        case .cardExport:
+            RecipeExportPanel(
+                recipe: current,
+                dishImage: currentImage,
+                recipeCardImageURL: recipeCardImageURL,
+                dishImageURL: exportImageURL,
+                generatedModeTitle: generatedModeTitle,
+                onGenerate: { showGenerateImageSheet = true },
+                onShareRecipeCard: {
+                    if let recipeCardImageURL {
+                        sharePayload = SharePayload(items: [recipeCardImageURL])
+                    } else {
+                        sharePayload = SharePayload(items: [recipeShareText])
+                    }
+                },
+                onShareDishImage: {
+                    if let exportImageURL {
+                        sharePayload = SharePayload(items: [exportImageURL])
+                    } else {
+                        sharePayload = SharePayload(items: [recipeShareText])
+                    }
+                }
+            )
+        case .notes:
+            NotesPanel(notes: current.notes)
         }
-        .frame(height: heroHeight)
     }
+}
 
-    private func posterPhoto(_ image: UIImage) -> some View {
-        ZStack {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFill()
-                .frame(height: heroHeight)
-                .scaleEffect(1.06)
-                .saturation(1.08)
-                .clipped()
+private struct RecipeHeroHeaderView: View {
+    let recipe: Recipe
+    let image: UIImage?
+    let height: CGFloat
+
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            Group {
+                if let image {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    LinearGradient(
+                        colors: [
+                            recipe.category.color.opacity(0.92),
+                            recipe.category.color.opacity(0.62),
+                            Color(red: 0.96, green: 0.88, blue: 0.80)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: height, maxHeight: height)
+            .clipped()
 
             LinearGradient(
-                colors: [
-                    .black.opacity(0.06),
-                    .clear,
-                    .black.opacity(0.58)
-                ],
+                colors: [.clear, .black.opacity(0.14), .black.opacity(0.62)],
                 startPoint: .top,
                 endPoint: .bottom
             )
 
-            RadialGradient(
-                colors: [.clear, .black.opacity(0.22)],
-                center: .center,
-                startRadius: 70,
-                endRadius: 340
-            )
-        }
-        .overlay(alignment: .topTrailing) {
-            Text("Photo du plat")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.white.opacity(0.95))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(
-                    Capsule()
-                        .fill(.black.opacity(0.24))
-                )
-                .overlay(
-                    Capsule()
-                        .stroke(.white.opacity(0.18), lineWidth: 1)
-                )
-                .padding(18)
-        }
-    }
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    CategoryBadge(category: recipe.category)
 
-    private var fallbackHeroPoster: some View {
-        ZStack {
-            LinearGradient(
-                colors: [
-                    current.category.color.opacity(0.94),
-                    current.category.color.opacity(0.68),
-                    Color.white.opacity(0.22)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+                    Spacer()
 
-            Circle()
-                .fill(Color.white.opacity(0.18))
-                .frame(width: 220, height: 220)
-                .blur(radius: 12)
-                .offset(x: -120, y: -90)
-
-            Circle()
-                .fill(current.category.color.opacity(0.25))
-                .frame(width: 180, height: 180)
-                .blur(radius: 8)
-                .offset(x: 120, y: -70)
-
-            VStack(spacing: 18) {
-                if !featuredIngredientGroups.isEmpty {
-                    HStack(spacing: 16) {
-                        ForEach(featuredIngredientGroups) { group in
-                            VStack(spacing: 8) {
-                                Text(group.kind.icon)
-                                    .font(.system(size: 34))
-                                    .frame(width: 70, height: 70)
-                                    .background(
-                                        Circle()
-                                            .fill(Color.white.opacity(0.22))
-                                    )
-                                Text(group.kind.title)
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.white.opacity(0.95))
-                            }
-                        }
-                    }
-                } else {
-                    Text(current.category.icon)
-                        .font(.system(size: 86))
-                        .padding(24)
-                        .background(
-                            Circle()
-                                .fill(Color.white.opacity(0.18))
-                        )
+                    Label(
+                        image == nil ? "Ajoutez ou generez une photo" : "Photo du plat",
+                        systemImage: image == nil ? "photo.badge.plus" : "photo"
+                    )
+                    .font(.caption.weight(.semibold))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule()
+                            .fill(.black.opacity(0.24))
+                    )
+                    .foregroundStyle(.white)
                 }
 
-                if !featuredIngredientGroups.isEmpty {
-                    HStack(spacing: 8) {
-                        ForEach(featuredIngredientGroups) { group in
-                            Text(group.sampleNames)
-                                .font(.caption)
-                                .lineLimit(1)
-                                .foregroundStyle(.white.opacity(0.95))
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(
-                                    Capsule()
-                                        .fill(Color.black.opacity(0.12))
-                                )
-                        }
-                    }
-                    .padding(.horizontal, 24)
+                Spacer()
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(recipe.name)
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+
+                    Text("Lecture plus claire pour cuisiner maintenant, export plus calme quand vous etes pret a partager.")
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.88))
                 }
             }
-            .padding(.top, 24)
+            .padding(24)
         }
-        .frame(height: heroHeight)
+    }
+}
+
+private struct RecipeMetaHeaderView: View {
+    let recipe: Recipe
+
+    private var metadataItems: [(systemImage: String, label: String, value: String)] {
+        var items: [(String, String, String)] = [
+            ("clock", "Preparation", recipe.prepTime.timeString),
+            ("flame", "Cuisson", recipe.cookTime.timeString),
+            ("person.2", "Portions", "\(recipe.servings)")
+        ]
+
+        if let caloriesPerServing = recipe.caloriesPerServing {
+            items.append(("bolt.heart", "Calories / portion", "\(caloriesPerServing) kcal"))
+        }
+
+        items.append(("list.bullet", "Ingredients", "\(recipe.ingredients.count)"))
+        return items
     }
 
-    private var heroOverlayContent: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            CategoryBadge(category: current.category)
-            Text(current.name)
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .foregroundStyle(.white)
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(recipe.category.rawValue)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(recipe.category.color)
+                    Text(recipe.name)
+                        .font(.title2.weight(.bold))
+                    Text("Espace de travail principal pour lire la recette, verifier les ingredients, suivre les etapes et ouvrir l'export seulement quand necessaire.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
 
-            Text("Une présentation plus proche d'une affiche culinaire.")
-                .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.88))
+                Spacer()
 
-            if !featuredIngredientGroups.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(featuredIngredientGroups) { group in
-                            HStack(spacing: 8) {
-                                Text(group.kind.icon)
-                                Text(group.sampleNames)
-                                    .lineLimit(1)
-                            }
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.white.opacity(0.96))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(
-                                Capsule()
-                                    .fill(.black.opacity(0.24))
-                            )
-                            .overlay(
-                                Capsule()
-                                    .stroke(.white.opacity(0.16), lineWidth: 1)
-                            )
-                        }
-                    }
+                if recipe.isFavorite {
+                    Label("Favori", systemImage: "star.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.yellow)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background(
+                            Capsule()
+                                .fill(Color.yellow.opacity(0.12))
+                        )
+                }
+            }
+
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 12)], spacing: 12) {
+                ForEach(metadataItems, id: \.label) { item in
+                    RecipeMetaTile(
+                        systemImage: item.systemImage,
+                        label: item.label,
+                        value: item.value
+                    )
                 }
             }
         }
         .padding(20)
-    }
-
-    private var infoBar: some View {
-        HStack(spacing: 0) {
-            infoCell(icon: "clock", label: "Prép.", value: current.prepTime.timeString)
-            Divider().frame(height: 40)
-            infoCell(icon: "flame", label: "Cuisson", value: current.cookTime.timeString)
-            Divider().frame(height: 40)
-            infoCell(icon: "person.2", label: "Portions", value: "\(current.servings)")
-            Divider().frame(height: 40)
-            infoCell(icon: "list.bullet", label: "Ingrédients", value: "\(current.ingredients.count)")
-        }
         .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color(UIColor.secondarySystemBackground))
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .fill(Color(.secondarySystemGroupedBackground))
         )
     }
+}
 
-    @ViewBuilder
-    private var ingredientOverview: some View {
-        if !current.ingredientGroups.isEmpty {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .firstTextBaseline) {
-                    sectionTitle("Vue rapide des ingrédients", icon: "square.grid.2x2")
-                    Spacer()
-                    Text("\(current.ingredients.count) au total")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+private struct RecipeMetaTile: View {
+    let systemImage: String
+    let label: String
+    let value: String
 
-                Text("Repérez rapidement les grandes familles comme les fruits, légumes, viandes et épices avant de lire les quantités.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Image(systemName: systemImage)
+                .foregroundStyle(Color.accentColor)
+            Text(value)
+                .font(.headline.weight(.bold))
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color(.systemBackground))
+        )
+    }
+}
 
-                LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 155), spacing: 12)],
-                    spacing: 12
+private struct RecipeActionBar: View {
+    let recipe: Recipe
+    @Binding var selectedSection: RecipeWorkspaceSection
+    let onEdit: () -> Void
+    let onShare: () -> Void
+    let onToggleFavorite: () -> Void
+    let onOpenGrocery: () -> Void
+    let onOpenCooking: () -> Void
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ActionPillButton(title: "Modifier", systemImage: "pencil", style: .secondary, action: onEdit)
+                ActionPillButton(title: "Partager", systemImage: "square.and.arrow.up", style: .secondary, action: onShare)
+                ActionPillButton(
+                    title: recipe.isFavorite ? "Favori" : "Ajouter aux favoris",
+                    systemImage: recipe.isFavorite ? "star.fill" : "star",
+                    style: recipe.isFavorite ? .highlight : .secondary,
+                    action: onToggleFavorite
+                )
+                ActionPillButton(title: "Epicerie", systemImage: "cart.badge.plus", style: .accent, action: onOpenGrocery)
+                ActionPillButton(title: "Cuisson", systemImage: "play.circle", style: .secondary, action: onOpenCooking)
+                ActionPillButton(
+                    title: "Export",
+                    systemImage: "square.and.arrow.up",
+                    style: selectedSection == .cardExport ? .highlight : .secondary
                 ) {
-                    ForEach(current.ingredientGroups) { group in
-                        ingredientGroupCard(group)
-                    }
+                    selectedSection = .cardExport
                 }
             }
         }
     }
+}
 
-    private var ingredientTextPanel: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ForEach(current.ingredients) { ing in
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    Circle()
-                        .fill(current.category.color)
-                        .frame(width: 6, height: 6)
-                        .padding(.top, 7)
-                    Group {
-                        if !ing.quantity.isEmpty {
-                            Text(ing.quantity).fontWeight(.semibold)
-                            + Text(" ") + Text(ing.name)
-                        } else {
-                            Text(ing.name)
+private struct ActionPillButton: View {
+    enum Style {
+        case accent
+        case secondary
+        case highlight
+
+        var foreground: Color {
+            switch self {
+            case .accent:
+                return .white
+            case .secondary:
+                return .primary
+            case .highlight:
+                return Color.accentColor
+            }
+        }
+
+        var background: Color {
+            switch self {
+            case .accent:
+                return Color.accentColor
+            case .secondary:
+                return Color(.secondarySystemBackground)
+            case .highlight:
+                return Color.accentColor.opacity(0.12)
+            }
+        }
+    }
+
+    let title: String
+    let systemImage: String
+    let style: Style
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            ActionPillLabel(title: title, systemImage: systemImage, style: style)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct ActionPillLabel: View {
+    let title: String
+    let systemImage: String
+    let style: ActionPillButton.Style
+
+    var body: some View {
+        Label(title, systemImage: systemImage)
+            .font(.subheadline.weight(.semibold))
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                Capsule()
+                    .fill(style.background)
+            )
+            .foregroundStyle(style.foreground)
+    }
+}
+
+private struct WorkspaceSectionPicker: View {
+    @Binding var selection: RecipeWorkspaceSection
+
+    var body: some View {
+        Picker("Section", selection: $selection) {
+            ForEach(RecipeWorkspaceSection.allCases) { section in
+                Text(section.rawValue).tag(section)
+            }
+        }
+        .pickerStyle(.segmented)
+    }
+}
+
+private struct RecipeOverviewPanel: View {
+    let recipe: Recipe
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            WorkspaceLeadCard(
+                title: "Flux principal",
+                message: "Passez d'abord par les ingredients et les etapes. La carte exportee reste disponible dans son onglet dedie, sans parasiter la lecture.",
+                systemImage: "rectangle.stack.badge.play"
+            )
+
+            if !recipe.ingredientGroups.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    SectionHeading(title: "Vue rapide des ingredients", systemImage: "square.grid.2x2")
+
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 12)], spacing: 12) {
+                        ForEach(recipe.ingredientGroups.prefix(6)) { group in
+                            VStack(alignment: .leading, spacing: 10) {
+                                HStack {
+                                    Text(group.kind.icon)
+                                    Text(group.kind.title)
+                                        .font(.headline)
+                                }
+
+                                Text("\(group.count) ingredient\(group.count > 1 ? "s" : "")")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+
+                                Text(group.sampleNames)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(3)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                    .fill(Color(.secondarySystemGroupedBackground))
+                            )
                         }
                     }
-                    .font(.body)
-                    Spacer()
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 12) {
+                SectionHeading(title: "Preparation en bref", systemImage: "list.number")
+
+                ForEach(Array(recipe.steps.prefix(3).enumerated()), id: \.offset) { index, step in
+                    HStack(alignment: .top, spacing: 12) {
+                        Text("\(index + 1)")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 28, height: 28)
+                            .background(
+                                Circle()
+                                    .fill(Color.accentColor)
+                            )
+
+                        Text(step)
+                            .font(.body)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .fill(Color(.secondarySystemGroupedBackground))
+                    )
                 }
             }
         }
     }
+}
 
-    @ViewBuilder
-    private var ingredientCardPanel: some View {
-        if let ingredientCardImage {
-            VStack(alignment: .leading, spacing: 10) {
-                Image(uiImage: ingredientCardImage)
+private struct IngredientChecklistPanel: View {
+    @Binding var selectedPresentation: IngredientPresentation
+    let recipe: Recipe
+    @Binding var checkedIngredientIDs: Set<UUID>
+    let recipeCardImage: UIImage?
+    let onGenerateRecipeCard: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                SectionHeading(title: "Checklist ingredients", systemImage: "checkmark.circle")
+                Spacer()
+                Button("Tout reinitialiser") {
+                    checkedIngredientIDs.removeAll()
+                }
+                .font(.caption.weight(.semibold))
+            }
+
+            Picker("Presentation", selection: $selectedPresentation) {
+                ForEach(IngredientPresentation.allCases) { presentation in
+                    Text(presentation.rawValue).tag(presentation)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            if selectedPresentation == .checklist {
+                ForEach(recipe.ingredientGroups) { group in
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text(group.kind.icon)
+                            Text(group.kind.title)
+                                .font(.headline)
+                            Spacer()
+                            Text("\(group.count)")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                        }
+
+                        ForEach(group.ingredients) { ingredient in
+                            IngredientChecklistRow(
+                                ingredient: ingredient,
+                                isChecked: checkedIngredientIDs.contains(ingredient.id)
+                            ) {
+                                if checkedIngredientIDs.contains(ingredient.id) {
+                                    checkedIngredientIDs.remove(ingredient.id)
+                                } else {
+                                    checkedIngredientIDs.insert(ingredient.id)
+                                }
+                            }
+                        }
+                    }
+                    .padding(18)
+                    .background(
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .fill(Color(.secondarySystemGroupedBackground))
+                    )
+                }
+            } else {
+                RecipeCardIngredientPanel(
+                    image: recipeCardImage,
+                    onGenerateRecipeCard: onGenerateRecipeCard
+                )
+            }
+        }
+    }
+}
+
+private struct RecipeCardIngredientPanel: View {
+    let image: UIImage?
+    let onGenerateRecipeCard: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            WorkspaceLeadCard(
+                title: "Recipe card des ingredients",
+                message: "Cette vue reste liee aux ingredients et aux etapes, sans remplacer la photo hero du plat.",
+                systemImage: "text.rectangle.page"
+            )
+
+            if let image {
+                Image(uiImage: image)
                     .resizable()
                     .scaledToFit()
                     .frame(maxWidth: .infinity)
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(current.category.color.opacity(0.12), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .stroke(Color.accentColor.opacity(0.12), lineWidth: 1)
                     )
-
-                if let ingredientCardSourceName {
-                    Text("Carte chargée: \(ingredientCardSourceName)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+            } else {
+                DetailEmptyCard(
+                    title: "Aucune recipe card",
+                    message: "Generez une Recipe Card pour voir ici une carte visuelle basee sur les ingredients et les etapes.",
+                    systemImage: "text.rectangle.page"
+                )
             }
-        } else if isGeneratingIngredientCard {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 10) {
-                    ProgressView()
-                    Text("Génération de la carte panoramique en cours...")
-                        .font(.headline)
-                }
 
-                Text("La carte est générée via l'API Images OpenAI en format paysage `1536x1024`, puis enregistrée localement pour les prochains affichages.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+            Button {
+                onGenerateRecipeCard()
+            } label: {
+                Label("Generer une Recipe Card", systemImage: "wand.and.stars")
+                    .frame(maxWidth: .infinity)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(Color(UIColor.secondarySystemBackground))
-            )
-        } else {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 10) {
-                    Image(systemName: "photo.on.rectangle.angled")
-                        .font(.title3)
-                        .foregroundStyle(current.category.color)
-                    Text("Aucune carte d'ingrédients trouvée")
-                        .font(.headline)
-                }
-
-                Text("Cette vue génère automatiquement une carte panoramique à partir de la recette et l'enregistre sous `\(current.suggestedIngredientCardFilename)`.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-
-                Text("Sources prises en charge: bundle `RecipeIngredientCards/` et `Documents/RecipeIngredientCards/`. Vous pouvez aussi déposer votre propre image dans ce dossier pour remplacer la génération.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                if let ingredientCardError {
-                    Text(ingredientCardError)
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                }
-
-                Button {
-                    Task {
-                        await generateIngredientCardIfNeeded(force: true)
-                    }
-                } label: {
-                    Label("Générer la carte", systemImage: "sparkles.rectangle.stack")
-                }
-                .buttonStyle(.borderedProminent)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(Color(UIColor.secondarySystemBackground))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(current.category.color.opacity(0.12), lineWidth: 1)
-            )
+            .buttonStyle(.borderedProminent)
         }
     }
+}
 
-    private var groceryListButton: some View {
-        Button {
-            store.createGroceryList(for: current)
-            showGroceryList = true
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "cart.badge.plus")
-                    .font(.title3)
+private struct IngredientChecklistRow: View {
+    let ingredient: Recipe.Ingredient
+    let isChecked: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Image(systemName: isChecked ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(isChecked ? .green : .secondary)
+
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Créer la liste d'épicerie")
-                        .font(.headline)
-                    Text("Générez une liste à cocher à partir de cette recette.")
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.85))
+                    Text(displayText)
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(isChecked ? .secondary : .primary)
+                        .strikethrough(isChecked, color: .secondary)
+
+                    if !ingredient.quantity.isEmpty {
+                        Text("Quantite: \(ingredient.quantity)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
+
                 Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
             }
-            .foregroundStyle(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(
-                        LinearGradient(
-                            colors: [current.category.color, current.category.color.opacity(0.78)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-            )
+            .padding(.vertical, 4)
         }
         .buttonStyle(.plain)
     }
 
-    private func ingredientGroupCard(_ group: Recipe.IngredientGroup) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Text(group.kind.icon)
-                    .font(.title3)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(group.kind.title)
+    private var displayText: String {
+        ingredient.name
+    }
+}
+
+private struct ProcedureStepsPanel: View {
+    let recipe: Recipe
+    let onOpenCooking: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                SectionHeading(title: "Preparation", systemImage: "list.number")
+                Spacer()
+                Button {
+                    onOpenCooking()
+                } label: {
+                    Label("Mode cuisson", systemImage: "play.circle.fill")
+                        .font(.subheadline.weight(.semibold))
+                }
+            }
+
+            if recipe.steps.isEmpty {
+                DetailEmptyCard(
+                    title: "Aucune etape",
+                    message: "Ajoutez la procedure pour activer un vrai mode cuisson.",
+                    systemImage: "text.badge.xmark"
+                )
+            } else {
+                ForEach(Array(recipe.steps.enumerated()), id: \.offset) { index, step in
+                    HStack(alignment: .top, spacing: 14) {
+                        Text("\(index + 1)")
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 34, height: 34)
+                            .background(
+                                Circle()
+                                    .fill(Color.accentColor)
+                            )
+
+                        Text(step)
+                            .font(.body)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        Spacer()
+                    }
+                    .padding(18)
+                    .background(
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .fill(Color(.secondarySystemGroupedBackground))
+                    )
+                }
+            }
+        }
+    }
+}
+
+private struct RecipeExportPanel: View {
+    let recipe: Recipe
+    let dishImage: UIImage?
+    let recipeCardImageURL: URL?
+    let dishImageURL: URL?
+    let generatedModeTitle: String?
+    let onGenerate: () -> Void
+    let onShareRecipeCard: () -> Void
+    let onShareDishImage: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            WorkspaceLeadCard(
+                title: "Export calme",
+                message: "La carte ou la photo finale vit ici comme un artefact de sortie. Le coeur de la recette reste dans les onglets Ingredients et Etapes.",
+                systemImage: "square.and.arrow.up"
+            )
+
+            HStack(spacing: 12) {
+                ExportArtifactStatusCard(
+                    title: "Recipe Card",
+                    isReady: recipeCardImageURL != nil,
+                    readyText: "Prete a partager",
+                    missingText: "A generer depuis Ingredients",
+                    systemImage: "text.rectangle.page"
+                )
+                ExportArtifactStatusCard(
+                    title: "Dish Photo",
+                    isReady: dishImageURL != nil,
+                    readyText: "Prete a partager",
+                    missingText: "A generer depuis Generate Image",
+                    systemImage: "fork.knife.circle"
+                )
+            }
+
+            if let dishImage {
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("Dish Photo actuelle", systemImage: "fork.knife.circle")
                         .font(.headline)
-                    Text("\(group.count) ingrédient\(group.count > 1 ? "s" : "")")
-                        .font(.caption)
+
+                    Image(uiImage: dishImage)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity)
+                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                .stroke(Color.accentColor.opacity(0.12), lineWidth: 1)
+                        )
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 10) {
+                    Label(generatedModeTitle ?? "Dish Photo courante", systemImage: "sparkles")
+                        .font(.subheadline.weight(.semibold))
+                    Spacer()
+                    Button {
+                        onGenerate()
+                    } label: {
+                        Label("Generer", systemImage: "wand.and.stars")
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+
+                Text("Choisissez un mode d'image, ajoutez une direction artistique, puis remplacez immediatement la photo de recette dans cette zone.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 10) {
+                    Button(action: onShareRecipeCard) {
+                        Label(recipeCardImageURL != nil ? "Partager la card" : "Partager la recette", systemImage: "square.and.arrow.up")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button(action: onShareDishImage) {
+                        Label(dishImageURL != nil ? "Partager le plat" : "Partager le texte", systemImage: dishImageURL != nil ? "photo" : "text.quote")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+            .padding(18)
+            .background(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(Color(.secondarySystemGroupedBackground))
+            )
+        }
+    }
+}
+
+private struct ExportArtifactStatusCard: View {
+    let title: String
+    let isReady: Bool
+    let readyText: String
+    let missingText: String
+    let systemImage: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label(title, systemImage: systemImage)
+                .font(.headline)
+            Text(isReady ? readyText : missingText)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Image(systemName: isReady ? "checkmark.circle.fill" : "clock.badge.exclamationmark")
+                .foregroundStyle(isReady ? .green : .secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color(.secondarySystemGroupedBackground))
+        )
+    }
+}
+
+private struct SharePayload: Identifiable {
+    let id = UUID()
+    let items: [Any]
+}
+
+private struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+private struct NotesPanel: View {
+    let notes: String
+
+    var body: some View {
+        if notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            DetailEmptyCard(
+                title: "Aucune note",
+                message: "Ajoutez des commentaires, souvenirs de famille ou conseils de service pour completer la recette.",
+                systemImage: "note.text.badge.plus"
+            )
+        } else {
+            VStack(alignment: .leading, spacing: 12) {
+                SectionHeading(title: "Notes", systemImage: "note.text")
+                Text(notes)
+                    .font(.body)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(18)
+                    .background(
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .fill(Color(.secondarySystemGroupedBackground))
+                    )
+            }
+        }
+    }
+}
+
+private struct CookingModeView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var currentStepIndex = 0
+
+    let recipe: Recipe
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(recipe.name)
+                        .font(.largeTitle.weight(.bold))
+                    Text("Mode cuisson concentre")
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
+
+                if recipe.steps.isEmpty {
+                    DetailEmptyCard(
+                        title: "Aucune etape disponible",
+                        message: "Ajoutez des etapes a cette recette pour utiliser le mode cuisson.",
+                        systemImage: "list.bullet.rectangle"
+                    )
+                } else {
+                    Text("Etape \(currentStepIndex + 1) sur \(recipe.steps.count)")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+
+                    Text(recipe.steps[currentStepIndex])
+                        .font(.title3)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(24)
+                        .background(
+                            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                                .fill(Color(.secondarySystemGroupedBackground))
+                        )
+
+                    HStack(spacing: 12) {
+                        Button {
+                            currentStepIndex = max(0, currentStepIndex - 1)
+                        } label: {
+                            Label("Precedente", systemImage: "chevron.left")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(currentStepIndex == 0)
+
+                        Button {
+                            currentStepIndex = min(recipe.steps.count - 1, currentStepIndex + 1)
+                        } label: {
+                            Label(currentStepIndex == recipe.steps.count - 1 ? "Terminer" : "Suivante", systemImage: "chevron.right")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Ingredients utiles")
+                            .font(.headline)
+
+                        ForEach(recipe.ingredients.prefix(8)) { ingredient in
+                            Text(ingredient.quantity.isEmpty ? ingredient.name : "\(ingredient.quantity) \(ingredient.name)")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
                 Spacer()
             }
-
-            Text(group.sampleNames)
-                .font(.subheadline)
-                .foregroundStyle(.primary)
-                .lineLimit(3)
+            .padding(24)
+            .navigationTitle("Cuisson")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Fermer") {
+                        dismiss()
+                    }
+                }
+            }
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct WorkspaceLeadCard: View {
+    let title: String
+    let message: String
+    let systemImage: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: systemImage)
+                .font(.title3)
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 34, height: 34)
+                .background(
+                    Circle()
+                        .fill(Color.accentColor.opacity(0.12))
+                )
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(title)
+                    .font(.headline)
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+        }
+        .padding(18)
         .background(
-            RoundedRectangle(cornerRadius: 18)
-                .fill(Color(UIColor.secondarySystemBackground))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(current.category.color.opacity(0.14), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color(.secondarySystemGroupedBackground))
         )
     }
+}
 
-    private func infoCell(icon: String, label: String, value: String) -> some View {
-        VStack(spacing: 4) {
-            Image(systemName: icon)
-                .font(.caption)
-                .foregroundStyle(current.category.color)
-            Text(value)
-                .font(.subheadline)
-                .fontWeight(.semibold)
-            Text(label)
-                .font(.caption2)
+private struct DetailEmptyCard: View {
+    let title: String
+    let message: String
+    let systemImage: String
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.system(size: 32))
                 .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 10)
-    }
-
-    private func sectionTitle(_ title: String, icon: String) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .foregroundStyle(current.category.color)
             Text(title)
                 .font(.headline)
+            Text(message)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
         }
+        .frame(maxWidth: .infinity)
+        .padding(28)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color(.secondarySystemGroupedBackground))
+        )
     }
+}
 
-    private func sectionHeader(_ title: String, icon: String) -> some View {
-        sectionTitle(title, icon: icon)
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-    }
+private struct SectionHeading: View {
+    let title: String
+    let systemImage: String
 
-    private func loadIngredientCardIfAvailable() {
-        let resolved = Self.resolveIngredientCard(for: current)
-        ingredientCardData = resolved?.data
-        ingredientCardSourceName = resolved?.fileName
-        if resolved != nil {
-            ingredientCardError = nil
-        }
-    }
-
-    private static func resolveIngredientCard(for recipe: Recipe) -> (data: Data, fileName: String)? {
-        for key in recipe.ingredientCardLookupKeys {
-            for ext in Self.supportedIngredientCardExtensions {
-                let liveURL = RecipeCardImageGenerator.liveDirectoryURL().appendingPathComponent("\(key).\(ext)")
-                if let resolved = loadIngredientCard(from: liveURL) {
-                    return resolved
-                }
-            }
-        }
-
-        for key in recipe.ingredientCardLookupKeys {
-            for ext in Self.supportedIngredientCardExtensions {
-                if let bundledURL = Bundle.main.url(forResource: key, withExtension: ext, subdirectory: RecipeCardImageGenerator.directoryName),
-                   let resolved = loadIngredientCard(from: bundledURL) {
-                    return resolved
-                }
-            }
-        }
-
-        return nil
-    }
-
-    private static func loadIngredientCard(from url: URL) -> (data: Data, fileName: String)? {
-        guard let data = try? Data(contentsOf: url), UIImage(data: data) != nil else { return nil }
-        return (data, url.lastPathComponent)
-    }
-
-    private static let supportedIngredientCardExtensions = ["png", "jpg", "jpeg", "webp"]
-
-    private func generateIngredientCardIfNeeded(force: Bool = false) async {
-        guard ingredientPanel == .card else { return }
-        if isGeneratingIngredientCard { return }
-        if ingredientCardData != nil && !force { return }
-
-        isGeneratingIngredientCard = true
-        ingredientCardError = nil
-
-        do {
-            let imageData = try await RecipeCardImageGenerator.generateAndSaveCard(for: current)
-            ingredientCardData = imageData
-            ingredientCardSourceName = RecipeCardImageGenerator.ingredientCardURL(for: current).lastPathComponent
-        } catch {
-            ingredientCardError = error.localizedDescription
-        }
-
-        isGeneratingIngredientCard = false
+    var body: some View {
+        Label(title, systemImage: systemImage)
+            .font(.headline)
+            .foregroundStyle(.primary)
     }
 }
 
 #if DEBUG
 #Preview {
-    RecipeDetailView(recipe: Recipe.samples[0])
-        .environmentObject(RecipeStore())
+    NavigationStack {
+        RecipeDetailView(recipe: Recipe.samples[0])
+            .environmentObject(RecipeStore())
+    }
 }
 #endif

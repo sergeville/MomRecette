@@ -13,6 +13,7 @@ struct AddEditRecipeView: View {
             _name         = State(initialValue: r.name)
             _category     = State(initialValue: r.category)
             _servings     = State(initialValue: r.servings)
+            _caloriesPerServingText = State(initialValue: r.caloriesPerServing.map(String.init) ?? "")
             _prepTime     = State(initialValue: r.prepTime)
             _cookTime     = State(initialValue: r.cookTime)
             _ingredients  = State(initialValue: r.ingredients)
@@ -22,6 +23,8 @@ struct AddEditRecipeView: View {
             _photoFilename = State(initialValue: r.photoFilename)
             _generatedImagePrompt = State(initialValue: r.generatedImagePrompt)
             _generatedImageMode = State(initialValue: r.generatedImageMode)
+            _recipeCardFilename = State(initialValue: r.recipeCardFilename)
+            _generatedRecipeCardPrompt = State(initialValue: r.generatedRecipeCardPrompt)
             _createdAt = State(initialValue: r.createdAt)
         }
     }
@@ -30,6 +33,7 @@ struct AddEditRecipeView: View {
     @State private var name: String = ""
     @State private var category: Recipe.Category = .plats
     @State private var servings: Int = 4
+    @State private var caloriesPerServingText: String = ""
     @State private var prepTime: Int = 15
     @State private var cookTime: Int = 30
     @State private var ingredients: [Recipe.Ingredient] = [Recipe.Ingredient(name: "")]
@@ -39,6 +43,8 @@ struct AddEditRecipeView: View {
     @State private var photoFilename: String? = nil
     @State private var generatedImagePrompt: String? = nil
     @State private var generatedImageMode: String? = nil
+    @State private var recipeCardFilename: String? = nil
+    @State private var generatedRecipeCardPrompt: String? = nil
     @State private var createdAt: Date = Date()
 
     @State private var nameError = false
@@ -78,6 +84,10 @@ struct AddEditRecipeView: View {
                 // ── Timing & Servings ────────────────────
                 Section("Temps & Portions") {
                     Stepper("Portions: \(servings)", value: $servings, in: 1...50)
+                    TextField("Calories par portion", text: $caloriesPerServingText)
+#if !targetEnvironment(macCatalyst)
+                        .keyboardType(.numberPad)
+#endif
                     Stepper("Préparation: \(prepTime) min",
                             value: $prepTime, in: 0...300, step: 5)
                     Stepper("Cuisson: \(cookTime) min",
@@ -168,11 +178,15 @@ struct AddEditRecipeView: View {
         }
         nameError = false
 
+        let trimmedCalories = caloriesPerServingText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let caloriesPerServing = trimmedCalories.isEmpty ? nil : Int(trimmedCalories)
+
         let cleaned = Recipe(
             id: editingId ?? UUID(),
             name: name.trimmingCharacters(in: .whitespaces),
             category: category,
             servings: servings,
+            caloriesPerServing: caloriesPerServing,
             prepTime: prepTime,
             cookTime: cookTime,
             ingredients: ingredients.filter { !$0.name.isEmpty },
@@ -181,6 +195,8 @@ struct AddEditRecipeView: View {
             photoFilename: photoFilename,
             generatedImagePrompt: generatedImagePrompt,
             generatedImageMode: generatedImageMode,
+            recipeCardFilename: recipeCardFilename,
+            generatedRecipeCardPrompt: generatedRecipeCardPrompt,
             notes: notes,
             createdAt: createdAt
         )

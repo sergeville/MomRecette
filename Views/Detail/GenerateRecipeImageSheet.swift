@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct GenerateRecipeImageSheet: View {
-    @EnvironmentObject private var store: RecipeStore
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject var store: RecipeStore
 
     @State private var selectedMode: RecipeImageMode = .recipeCard
     @State private var extraDetail = ""
@@ -16,11 +16,57 @@ struct GenerateRecipeImageSheet: View {
     }
 
     private var previewImage: UIImage? {
-        guard let data = current.imageData else { return nil }
-        return UIImage(data: data)
+        switch selectedMode {
+        case .dishPhoto:
+            guard let data = current.imageData else { return nil }
+            return UIImage(data: data)
+        case .recipeCard:
+            guard let data = store.recipeCardImageData(for: current) else { return nil }
+            return UIImage(data: data)
+        }
+    }
+
+    private var previewTitle: String {
+        switch selectedMode {
+        case .dishPhoto:
+            return "Dish Photo"
+        case .recipeCard:
+            return "Recipe Card"
+        }
+    }
+
+    private var previewMessage: String {
+        switch selectedMode {
+        case .dishPhoto:
+            return "This image becomes the hero recipe photo used in the main workspace."
+        case .recipeCard:
+            return "This image stays in the Card / Export surface and no longer replaces the dish photo."
+        }
     }
 
     var body: some View {
+        if #available(iOS 18.0, macCatalyst 18.0, *) {
+            sheetContent
+                .presentationSizing(.page)
+                .frame(
+                    minWidth: modalSizing.minimumWidth,
+                    idealWidth: modalSizing.idealWidth,
+                    minHeight: modalSizing.minimumHeight,
+                    idealHeight: modalSizing.idealHeight
+                )
+        } else {
+            sheetContent
+                .frame(
+                    minWidth: modalSizing.minimumWidth,
+                    idealWidth: modalSizing.idealWidth,
+                    minHeight: modalSizing.minimumHeight,
+                    idealHeight: modalSizing.idealHeight
+                )
+                .background(sheetFrame.hidden())
+        }
+    }
+
+    private var sheetContent: some View {
         NavigationStack {
             Form {
                 Section("Preview") {
@@ -35,9 +81,9 @@ struct GenerateRecipeImageSheet: View {
                             Image(systemName: "photo")
                                 .font(.system(size: 30))
                                 .foregroundStyle(.secondary)
-                            Text("No current image")
+                            Text("No current \(previewTitle)")
                                 .font(.headline)
-                            Text("Generate a new image and it will be attached to this recipe immediately.")
+                            Text(previewMessage)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
@@ -56,6 +102,10 @@ struct GenerateRecipeImageSheet: View {
                     .pickerStyle(.segmented)
 
                     Text(selectedMode.shortDescription)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Text(previewMessage)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -118,6 +168,9 @@ struct GenerateRecipeImageSheet: View {
                 }
             }
         }
+#if !targetEnvironment(macCatalyst)
+        .presentationDetents([.large])
+#endif
     }
 
     private func generateImage() async {
@@ -158,6 +211,31 @@ struct GenerateRecipeImageSheet: View {
     private var normalizedExtraDetail: String? {
         let trimmed = extraDetail.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
+    }
+
+    private var sheetFrame: some View {
+        Group {
+            #if targetEnvironment(macCatalyst)
+            Color.clear
+                .frame(
+                    minWidth: modalSizing.minimumWidth,
+                    idealWidth: modalSizing.idealWidth,
+                    minHeight: modalSizing.minimumHeight,
+                    idealHeight: modalSizing.idealHeight
+                )
+            #else
+            Color.clear
+                .frame(minHeight: 720)
+            #endif
+        }
+    }
+
+    private var modalSizing: (minimumWidth: CGFloat, idealWidth: CGFloat, minimumHeight: CGFloat, idealHeight: CGFloat) {
+        #if targetEnvironment(macCatalyst)
+        return (680, 740, 980, 1080)
+        #else
+        return (0, 0, 0, 0)
+        #endif
     }
 }
 
@@ -216,7 +294,6 @@ private struct RecipeImageIssueCard: View {
 
 #if DEBUG
 #Preview {
-    GenerateRecipeImageSheet(recipe: Recipe.samples[0])
-        .environmentObject(RecipeStore())
+    GenerateRecipeImageSheet(store: RecipeStore(), recipe: Recipe.samples[0])
 }
 #endif
