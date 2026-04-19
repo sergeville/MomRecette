@@ -326,7 +326,9 @@ struct SearchBar: View {
     }
 }
 
+#if DEBUG
 #Preview {
     ContentView()
         .environmentObject(RecipeStore())
 }
+#endif

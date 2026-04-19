@@ -189,7 +189,9 @@ extension Array {
     }
 }
 
+#if DEBUG
 #Preview {
     RolodexDeckView()
         .environmentObject(RecipeStore())
 }
+#endif

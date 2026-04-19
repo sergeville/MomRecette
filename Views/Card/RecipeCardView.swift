@@ -166,7 +166,9 @@ struct CategoryBadge: View {
 
 // MARK: - Preview
 
+#if DEBUG
 #Preview {
     RecipeCardView(recipe: Recipe.samples[0])
         .padding()
 }
+#endif

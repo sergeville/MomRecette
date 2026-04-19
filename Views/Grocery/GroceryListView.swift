@@ -308,7 +308,9 @@ struct GroceryListView: View {
     }
 }
 
+#if DEBUG
 #Preview {
     GroceryListView()
         .environmentObject(RecipeStore())
 }
+#endif

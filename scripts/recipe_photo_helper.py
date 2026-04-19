@@ -113,6 +113,15 @@ def save_from_file(source: Path, destination: Path) -> None:
     shutil.copy2(source, destination)
 
 
+def remove_sibling_variants(destination: Path) -> None:
+    stem = destination.stem
+    for ext in sorted(ALLOWED_EXTENSIONS):
+        candidate = destination.parent / f"{stem}{ext}"
+        if candidate == destination or not candidate.exists():
+            continue
+        candidate.unlink()
+
+
 def normalized_request_url(url: str) -> str:
     parsed = urllib.parse.urlsplit(url)
     path = urllib.parse.quote(parsed.path, safe="/%")
@@ -222,6 +231,9 @@ def main() -> int:
             raise SystemExit(f"Destination already exists: {destination}\nUse --overwrite to replace it.")
 
     for destination in destinations:
+        if args.overwrite:
+            remove_sibling_variants(destination)
+
         if source_path:
             save_from_file(source_path, destination)
             print(f"Saved local image for '{recipe_name}' -> {destination}")

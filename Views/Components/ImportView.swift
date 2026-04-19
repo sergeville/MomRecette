@@ -305,7 +305,9 @@ struct LenientRecipe: Codable {
     }
 }
 
+#if DEBUG
 #Preview {
     ImportView()
         .environmentObject(RecipeStore())
 }
+#endif
