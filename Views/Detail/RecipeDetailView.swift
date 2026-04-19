@@ -3,12 +3,25 @@ import SwiftUI
 // MARK: - Recipe Detail Sheet
 
 struct RecipeDetailView: View {
+    private enum IngredientPanel: String, CaseIterable, Identifiable {
+        case text = "Texte"
+        case card = "Carte"
+
+        var id: String { rawValue }
+    }
+
     @EnvironmentObject var store: RecipeStore
     @Environment(\.dismiss) var dismiss
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var showEdit = false
     @State private var showDeleteAlert = false
     @State private var showGroceryList = false
+    @State private var showGenerateImageSheet = false
+    @State private var ingredientPanel: IngredientPanel = .text
+    @State private var ingredientCardData: Data?
+    @State private var ingredientCardSourceName: String?
+    @State private var isGeneratingIngredientCard = false
+    @State private var ingredientCardError: String?
 
     let recipe: Recipe
 
@@ -22,6 +35,15 @@ struct RecipeDetailView: View {
 
     private var featuredIngredientGroups: [Recipe.IngredientGroup] {
         Array(current.ingredientGroups.prefix(3))
+    }
+
+    private var ingredientCardLookupSignature: String {
+        current.ingredientCardLookupKeys.joined(separator: "|")
+    }
+
+    private var ingredientCardImage: UIImage? {
+        guard let ingredientCardData else { return nil }
+        return UIImage(data: ingredientCardData)
     }
 
     var body: some View {
@@ -48,24 +70,18 @@ struct RecipeDetailView: View {
 
                     // ── Ingredients ─────────────────────────
                     Section {
-                        VStack(alignment: .leading, spacing: 8) {
-                            ForEach(current.ingredients) { ing in
-                                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                                    Circle()
-                                        .fill(current.category.color)
-                                        .frame(width: 6, height: 6)
-                                        .padding(.top, 7)
-                                    Group {
-                                        if !ing.quantity.isEmpty {
-                                            Text(ing.quantity).fontWeight(.semibold)
-                                            + Text(" ") + Text(ing.name)
-                                        } else {
-                                            Text(ing.name)
-                                        }
-                                    }
-                                    .font(.body)
-                                    Spacer()
+                        VStack(alignment: .leading, spacing: 16) {
+                            Picker("Affichage des ingrédients", selection: $ingredientPanel) {
+                                ForEach(IngredientPanel.allCases) { panel in
+                                    Text(panel.rawValue).tag(panel)
                                 }
+                            }
+                            .pickerStyle(.segmented)
+
+                            if ingredientPanel == .text {
+                                ingredientTextPanel
+                            } else {
+                                ingredientCardPanel
                             }
                         }
                         .padding(.horizontal, 20)
@@ -127,7 +143,11 @@ struct RecipeDetailView: View {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Fermer") { dismiss() }
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    GenerateRecipeImageButton {
+                        showGenerateImageSheet = true
+                    }
+
                     Menu {
                         Button { showEdit = true } label: {
                             Label("Modifier", systemImage: "pencil")
@@ -143,6 +163,9 @@ struct RecipeDetailView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showGenerateImageSheet) {
+                GenerateRecipeImageSheet(recipe: current)
+            }
             .sheet(isPresented: $showEdit) {
                 AddEditRecipeView(recipe: current)
             }
@@ -155,6 +178,18 @@ struct RecipeDetailView: View {
                     dismiss()
                 }
                 Button("Annuler", role: .cancel) {}
+            }
+            .task(id: ingredientCardLookupSignature) {
+                loadIngredientCardIfAvailable()
+                if ingredientPanel == .card {
+                    await generateIngredientCardIfNeeded()
+                }
+            }
+            .onChange(of: ingredientPanel) { panel in
+                guard panel == .card else { return }
+                Task {
+                    await generateIngredientCardIfNeeded()
+                }
             }
         }
     }
@@ -380,6 +415,113 @@ struct RecipeDetailView: View {
         }
     }
 
+    private var ingredientTextPanel: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(current.ingredients) { ing in
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Circle()
+                        .fill(current.category.color)
+                        .frame(width: 6, height: 6)
+                        .padding(.top, 7)
+                    Group {
+                        if !ing.quantity.isEmpty {
+                            Text(ing.quantity).fontWeight(.semibold)
+                            + Text(" ") + Text(ing.name)
+                        } else {
+                            Text(ing.name)
+                        }
+                    }
+                    .font(.body)
+                    Spacer()
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var ingredientCardPanel: some View {
+        if let ingredientCardImage {
+            VStack(alignment: .leading, spacing: 10) {
+                Image(uiImage: ingredientCardImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(current.category.color.opacity(0.12), lineWidth: 1)
+                    )
+
+                if let ingredientCardSourceName {
+                    Text("Carte chargée: \(ingredientCardSourceName)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        } else if isGeneratingIngredientCard {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 10) {
+                    ProgressView()
+                    Text("Génération de la carte panoramique en cours...")
+                        .font(.headline)
+                }
+
+                Text("La carte est générée via l'API Images OpenAI en format paysage `1536x1024`, puis enregistrée localement pour les prochains affichages.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(Color(UIColor.secondarySystemBackground))
+            )
+        } else {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 10) {
+                    Image(systemName: "photo.on.rectangle.angled")
+                        .font(.title3)
+                        .foregroundStyle(current.category.color)
+                    Text("Aucune carte d'ingrédients trouvée")
+                        .font(.headline)
+                }
+
+                Text("Cette vue génère automatiquement une carte panoramique à partir de la recette et l'enregistre sous `\(current.suggestedIngredientCardFilename)`.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                Text("Sources prises en charge: bundle `RecipeIngredientCards/` et `Documents/RecipeIngredientCards/`. Vous pouvez aussi déposer votre propre image dans ce dossier pour remplacer la génération.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if let ingredientCardError {
+                    Text(ingredientCardError)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+
+                Button {
+                    Task {
+                        await generateIngredientCardIfNeeded(force: true)
+                    }
+                } label: {
+                    Label("Générer la carte", systemImage: "sparkles.rectangle.stack")
+                }
+                .buttonStyle(.borderedProminent)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(Color(UIColor.secondarySystemBackground))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(current.category.color.opacity(0.12), lineWidth: 1)
+            )
+        }
+    }
+
     private var groceryListButton: some View {
         Button {
             store.createGroceryList(for: current)
@@ -478,9 +620,68 @@ struct RecipeDetailView: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
     }
+
+    private func loadIngredientCardIfAvailable() {
+        let resolved = Self.resolveIngredientCard(for: current)
+        ingredientCardData = resolved?.data
+        ingredientCardSourceName = resolved?.fileName
+        if resolved != nil {
+            ingredientCardError = nil
+        }
+    }
+
+    private static func resolveIngredientCard(for recipe: Recipe) -> (data: Data, fileName: String)? {
+        for key in recipe.ingredientCardLookupKeys {
+            for ext in Self.supportedIngredientCardExtensions {
+                let liveURL = RecipeCardImageGenerator.liveDirectoryURL().appendingPathComponent("\(key).\(ext)")
+                if let resolved = loadIngredientCard(from: liveURL) {
+                    return resolved
+                }
+            }
+        }
+
+        for key in recipe.ingredientCardLookupKeys {
+            for ext in Self.supportedIngredientCardExtensions {
+                if let bundledURL = Bundle.main.url(forResource: key, withExtension: ext, subdirectory: RecipeCardImageGenerator.directoryName),
+                   let resolved = loadIngredientCard(from: bundledURL) {
+                    return resolved
+                }
+            }
+        }
+
+        return nil
+    }
+
+    private static func loadIngredientCard(from url: URL) -> (data: Data, fileName: String)? {
+        guard let data = try? Data(contentsOf: url), UIImage(data: data) != nil else { return nil }
+        return (data, url.lastPathComponent)
+    }
+
+    private static let supportedIngredientCardExtensions = ["png", "jpg", "jpeg", "webp"]
+
+    private func generateIngredientCardIfNeeded(force: Bool = false) async {
+        guard ingredientPanel == .card else { return }
+        if isGeneratingIngredientCard { return }
+        if ingredientCardData != nil && !force { return }
+
+        isGeneratingIngredientCard = true
+        ingredientCardError = nil
+
+        do {
+            let imageData = try await RecipeCardImageGenerator.generateAndSaveCard(for: current)
+            ingredientCardData = imageData
+            ingredientCardSourceName = RecipeCardImageGenerator.ingredientCardURL(for: current).lastPathComponent
+        } catch {
+            ingredientCardError = error.localizedDescription
+        }
+
+        isGeneratingIngredientCard = false
+    }
 }
 
+#if DEBUG
 #Preview {
     RecipeDetailView(recipe: Recipe.samples[0])
         .environmentObject(RecipeStore())
 }
+#endif

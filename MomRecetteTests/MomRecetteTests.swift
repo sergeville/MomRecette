@@ -22,16 +22,24 @@ final class MomRecetteTests: XCTestCase {
         }
     }
 
-    private func makeStore() throws -> RecipeStore {
-        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    private func makeStore(
+        directory: URL? = nil,
+        livePhotoDirectoryURL: URL? = nil,
+        recipeImageGenerator: (any RecipeImageGenerating)? = nil
+    ) throws -> RecipeStore {
+        let directory = directory ?? FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
         return RecipeStore(
             recipesURL: directory.appendingPathComponent("recipes.json"),
             groceryListURL: directory.appendingPathComponent("grocery-list.json"),
             shouldLoadSeedData: false,
-            livePhotoDirectoryURL: directory.appendingPathComponent("RecipePhotos"),
-            enablePhotoAutoRefresh: false
+            livePhotoDirectoryURL: livePhotoDirectoryURL ?? directory.appendingPathComponent("RecipePhotos"),
+            enablePhotoAutoRefresh: false,
+            recipeImageStorage: RecipeImageStorage(
+                directoryURL: directory.appendingPathComponent("RecipeImages", isDirectory: true)
+            ),
+            recipeImageGenerator: recipeImageGenerator
         )
     }
 
@@ -289,6 +297,105 @@ final class MomRecetteTests: XCTestCase {
         store.refreshRecipePhotosIfNeeded(force: true)
 
         XCTAssertNil(store.recipes.first?.imageData)
+    }
+
+    func testRecipeImageStorageSavesLoadsAndDeletesImage() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let storage = RecipeImageStorage(directoryURL: directory)
+        let recipe = Recipe(name: "Photo test", category: .plats)
+
+        let storedImage = try storage.saveImage(makeJPEGData(), for: recipe)
+
+        XCTAssertTrue(storedImage.filename.hasPrefix("photo-test-"))
+        XCTAssertNotNil(storage.loadImage(named: storedImage.filename))
+
+        try storage.deleteImage(named: storedImage.filename)
+
+        XCTAssertNil(storage.loadImage(named: storedImage.filename))
+    }
+
+    func testGenerateRecipeImageUpdatesRecipeAndStoresMetadata() async throws {
+        let store = try makeStore(recipeImageGenerator: MockRecipeImageGenerator(imageData: makeJPEGData()))
+        let recipe = Recipe(name: "Canard confit", category: .plats)
+        store.add(recipe)
+
+        try await store.generateRecipeImage(
+            for: recipe,
+            mode: .dishPhoto,
+            extraDetail: "golden lighting"
+        )
+
+        let updated = try XCTUnwrap(store.recipes.first)
+        XCTAssertNotNil(updated.imageData)
+        XCTAssertEqual(updated.generatedImageMode, RecipeImageMode.dishPhoto.rawValue)
+        XCTAssertEqual(updated.photoFilename?.hasPrefix("canard-confit-"), true)
+        XCTAssertTrue(updated.generatedImagePrompt?.contains("golden lighting") == true)
+    }
+
+    func testGeneratedRecipeImageTakesPrecedenceOverLiveRecipePhoto() async throws {
+        let baseDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let livePhotoDirectory = baseDirectory.appendingPathComponent("RecipePhotos", isDirectory: true)
+        let store = try makeStore(
+            directory: baseDirectory,
+            livePhotoDirectoryURL: livePhotoDirectory,
+            recipeImageGenerator: MockRecipeImageGenerator(imageData: makeJPEGData())
+        )
+        let recipe = Recipe(name: "Boeuf braise", category: .plats)
+        store.add(recipe)
+
+        try await store.generateRecipeImage(for: recipe, mode: .dishPhoto, extraDetail: nil)
+
+        try FileManager.default.createDirectory(at: livePhotoDirectory, withIntermediateDirectories: true)
+        let livePhotoData = try XCTUnwrap(
+            makeImage(size: CGSize(width: 20, height: 20), color: .systemBlue)
+                .jpegData(compressionQuality: 0.85)
+        )
+        try livePhotoData.write(to: livePhotoDirectory.appendingPathComponent("boeuf-braise.jpg"))
+
+        let regeneratedStore = try makeStore(
+            directory: baseDirectory,
+            livePhotoDirectoryURL: livePhotoDirectory,
+            recipeImageGenerator: MockRecipeImageGenerator(imageData: makeJPEGData())
+        )
+        regeneratedStore.refreshRecipePhotosIfNeeded(force: true)
+
+        XCTAssertEqual(regeneratedStore.recipes.first?.photoFilename, store.recipes.first?.photoFilename)
+        XCTAssertEqual(regeneratedStore.recipes.first?.imageData, store.recipes.first?.imageData)
+    }
+
+    func testRecipeImageIssueMapsMissingAPIKeyToStableDiagnosticID() {
+        let issue = RecipeImageIssue.from(OpenAIRecipeImageGenerator.GenerationError.missingAPIKey)
+
+        XCTAssertEqual(issue.id, "IMG-KEY-001")
+        XCTAssertTrue(issue.message.contains("OPENAI_API_KEY"))
+    }
+
+    func testRecipeImageIssueMapsTimeoutToStableDiagnosticID() {
+        let issue = RecipeImageIssue.from(
+            OpenAIRecipeImageGenerator.GenerationError.network(URLError(.timedOut))
+        )
+
+        XCTAssertEqual(issue.id, "IMG-NET-002")
+        XCTAssertTrue(issue.title.contains("timed out"))
+    }
+
+    func testRecipeImageIssueMapsRateLimitToStableDiagnosticID() {
+        let issue = RecipeImageIssue.from(
+            OpenAIRecipeImageGenerator.GenerationError.apiError(
+                statusCode: 429,
+                message: "Rate limit exceeded"
+            )
+        )
+
+        XCTAssertEqual(issue.id, "IMG-API-429")
+        XCTAssertTrue(issue.message.contains("temporarily limiting"))
+    }
+
+    func testRecipeImageIssueMapsStorageFailureToStableDiagnosticID() {
+        let issue = RecipeImageIssue.from(RecipeImageStorage.StorageError.invalidImageData)
+
+        XCTAssertEqual(issue.id, "IMG-STO-001")
+        XCTAssertTrue(issue.title.contains("could not be saved"))
     }
 
     func testRecipePhotoImportNormalizesRemoteURLWithoutScheme() {

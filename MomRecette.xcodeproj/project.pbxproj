@@ -29,17 +29,23 @@
 		2160384FC2733DCB2F730B0C /* gateau-aux-bananes.jpg in Resources */ = {isa = PBXBuildFile; fileRef = C7E8FB9DA5DAF50AF4943E27 /* gateau-aux-bananes.jpg */; };
 		2259B5A595CB79CC8E0D842A /* glacage-pour-gateau.jpg in Resources */ = {isa = PBXBuildFile; fileRef = E1B5158FF8D4CAF7478EB377 /* glacage-pour-gateau.jpg */; };
 		24395C565391D2AAA403F1E7 /* filet-de-porc-au-miel-et-au-balsamique.jpg in Resources */ = {isa = PBXBuildFile; fileRef = BD6DD8AD901CC0BACA0F5D77 /* filet-de-porc-au-miel-et-au-balsamique.jpg */; };
+		24B8007D77184269AD33A3A5 /* RecipeImageStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 565BD8E81CA54C239CD34947 /* RecipeImageStorage.swift */; };
 		285B8399D46A4908342DDA08 /* momrecette_bundle.json in Resources */ = {isa = PBXBuildFile; fileRef = BE07E6FA8AE696FDF3C1245D /* momrecette_bundle.json */; };
 		2E802DBF5FE9565B379CFBB2 /* filet-de-porc-a-la-moutade-de-meaux.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 4DD28923F51DEB9C04BBFCB9 /* filet-de-porc-a-la-moutade-de-meaux.jpg */; };
 		2F9ED667A07EDB2E4475911B /* fondue-japonaise.png in Resources */ = {isa = PBXBuildFile; fileRef = 1C46FFDD1C6199FC27239678 /* fondue-japonaise.png */; };
+		0A4B6CE94A4E482BBDC405F1 /* RecipeImageGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BC939F79D86435A915A70A6 /* RecipeImageGenerator.swift */; };
 		3092E65A82F4DF371BB21C6B /* dessert-ananas.webp in Resources */ = {isa = PBXBuildFile; fileRef = D78185DE885AFCCB4AEDC337 /* dessert-ananas.webp */; };
+		400D44752C6949CE963378BD /* GenerateRecipeImageButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B5BA3EB4E7641A8A5E7FD8E /* GenerateRecipeImageButton.swift */; };
 		3171A23140AE05F80A49D03B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5C6BE52E50D3EA8FBF5BADDD /* Assets.xcassets */; };
 		34D58F18298757EE72B0F611 /* coulis-aux-framboises.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 5CA1D6C13967070C0BCBA8E9 /* coulis-aux-framboises.jpg */; };
-		359638CA6BF86205B379ECAA /* brochette-de-poulet-a-la-coriandre.webp in Resources */ = {isa = PBXBuildFile; fileRef = 56428F371FAAE3644C9E0030 /* brochette-de-poulet-a-la-coriandre.webp */; };
+		359638CA6BF86205B379ECAA /* Brochette_de_Poulet_a_la_Coriandre.png in Resources */ = {isa = PBXBuildFile; fileRef = 56428F371FAAE3644C9E0030 /* Brochette_de_Poulet_a_la_Coriandre.png */; };
 		378E614E85CEC44D4D8A8E0C /* RecipeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 111BB93EB66689287DE48C04 /* RecipeStore.swift */; };
+		38A44E21BC6F90027F4D1AE3 /* RecipeCardImageGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13A4C538B0D16438F83F1D2A /* RecipeCardImageGenerator.swift */; };
 		3CAF0932076E87F0B0CD9351 /* gateau-aux-epices.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 89CC12107EE6D368F4924EAB /* gateau-aux-epices.jpg */; };
 		3EAE1B12DEA96F8D09CD53A2 /* filet-de-porc-aux-canneberges.jpg in Resources */ = {isa = PBXBuildFile; fileRef = CC43F61CEAB219CE510C0BA6 /* filet-de-porc-aux-canneberges.jpg */; };
 		41653F076F2F2C7C07EF3CAA /* bouillon-de-poulet-oriental.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 65DC772609083982D0C20479 /* bouillon-de-poulet-oriental.jpg */; };
+		D097D2A04E494F60818C632B /* GenerateRecipeImageSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 870A33BA18814CA88B1D7052 /* GenerateRecipeImageSheet.swift */; };
+		74C6D0CC357C4EACBFA241DA /* RecipeImagePromptBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE826583535948DFB26CC1C9 /* RecipeImagePromptBuilder.swift */; };
 		44381B582C3716979902B0ED /* hummus.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 8E02E32F4423FFEA1C19B992 /* hummus.jpg */; };
 		4672EE57EB89EF287E0E3B7A /* delicieuse-chaudree-de-saumon-jardiniere.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 7831770D2A18DF4B969B9759 /* delicieuse-chaudree-de-saumon-jardiniere.jpg */; };
 		48755034E34B71EDE2317EF8 /* egg-roll.jpg in Resources */ = {isa = PBXBuildFile; fileRef = A31BB4516CCDF909B69ACE22 /* egg-roll.jpg */; };
@@ -127,6 +133,7 @@
 		100DC2BEF72DF9F9AA43DC6B /* cretons-quatre-generations.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "cretons-quatre-generations.png"; sourceTree = "<group>"; };
 		101E04C86E695ED67874A3CB /* ImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportView.swift; sourceTree = "<group>"; };
 		111BB93EB66689287DE48C04 /* RecipeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeStore.swift; sourceTree = "<group>"; };
+		13A4C538B0D16438F83F1D2A /* RecipeCardImageGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeCardImageGenerator.swift; sourceTree = "<group>"; };
 		117536E29C33336A7C9EFE7C /* MomRecetteTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MomRecetteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		11AA225000C83F623DAEDBC6 /* fondue-japonaise.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "fondue-japonaise.jpg"; sourceTree = "<group>"; };
 		13800C93140DDCB6810605FB /* fondue-au-chocolat.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "fondue-au-chocolat.png"; sourceTree = "<group>"; };
@@ -146,7 +153,7 @@
 		4DD28923F51DEB9C04BBFCB9 /* filet-de-porc-a-la-moutade-de-meaux.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "filet-de-porc-a-la-moutade-de-meaux.jpg"; sourceTree = "<group>"; };
 		529BE350820769634FC27065 /* fondue-thaie.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "fondue-thaie.jpg"; sourceTree = "<group>"; };
 		543B62AEDB3C62B47A364BC5 /* flan-de-steak.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "flan-de-steak.jpg"; sourceTree = "<group>"; };
-		56428F371FAAE3644C9E0030 /* brochette-de-poulet-a-la-coriandre.webp */ = {isa = PBXFileReference; path = "brochette-de-poulet-a-la-coriandre.webp"; sourceTree = "<group>"; };
+		56428F371FAAE3644C9E0030 /* Brochette_de_Poulet_a_la_Coriandre.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Brochette_de_Poulet_a_la_Coriandre.png; sourceTree = "<group>"; };
 		56BBBD9F21D8171F403A3F62 /* biscuit-de-noel.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "biscuit-de-noel.jpg"; sourceTree = "<group>"; };
 		57BB51B96AA8565729C29A0A /* hot-and-sour-soup.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "hot-and-sour-soup.jpg"; sourceTree = "<group>"; };
 		5C0EBFCD54FAB54756DA4DCB /* gelee-aux-piments-forts.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "gelee-aux-piments-forts.jpg"; sourceTree = "<group>"; };
@@ -155,6 +162,7 @@
 		5D7B25EB4BE28748B73CF170 /* beef-stuffed-cabbage.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "beef-stuffed-cabbage.jpg"; sourceTree = "<group>"; };
 		5FB0978DA060700CD172582D /* pouding-chomeur.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "pouding-chomeur.jpg"; sourceTree = "<group>"; };
 		5FF4B301CA2E4310C06405BA /* pesto-maison.webp */ = {isa = PBXFileReference; path = "pesto-maison.webp"; sourceTree = "<group>"; };
+		565BD8E81CA54C239CD34947 /* RecipeImageStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeImageStorage.swift; sourceTree = "<group>"; };
 		62077EAAB18C6B0E4E2B1771 /* amuse-gueules-au-brie.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "amuse-gueules-au-brie.jpg"; sourceTree = "<group>"; };
 		629ED2C53210C9ED400279AF /* creme-de-panais-et-tomates.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "creme-de-panais-et-tomates.jpeg"; sourceTree = "<group>"; };
 		6390F8658A8B06CDB4508D75 /* RecipeDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeDetailView.swift; sourceTree = "<group>"; };
@@ -164,6 +172,8 @@
 		6A163CCDBB61305842F82207 /* bifteck-de-flan-farci.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "bifteck-de-flan-farci.jpg"; sourceTree = "<group>"; };
 		6B8B948B0D319817C4C926B4 /* biscuit-sans-cuisson.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "biscuit-sans-cuisson.jpg"; sourceTree = "<group>"; };
 		709AB813F00E3FFEDE96AC16 /* frozen-peanut-butter-joy.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "frozen-peanut-butter-joy.jpg"; sourceTree = "<group>"; };
+		0B5BA3EB4E7641A8A5E7FD8E /* GenerateRecipeImageButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateRecipeImageButton.swift; sourceTree = "<group>"; };
+		870A33BA18814CA88B1D7052 /* GenerateRecipeImageSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateRecipeImageSheet.swift; sourceTree = "<group>"; };
 		7778505983326E24C114FBE7 /* fish-and-chips-moins-gras.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "fish-and-chips-moins-gras.jpg"; sourceTree = "<group>"; };
 		7831770D2A18DF4B969B9759 /* delicieuse-chaudree-de-saumon-jardiniere.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "delicieuse-chaudree-de-saumon-jardiniere.jpg"; sourceTree = "<group>"; };
 		7996417BC3C84419B9B32AEF /* coquille-st-jacques.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "coquille-st-jacques.jpg"; sourceTree = "<group>"; };
@@ -178,6 +188,7 @@
 		908A9BE135478562477235CE /* barres-aux-amandes.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "barres-aux-amandes.jpg"; sourceTree = "<group>"; };
 		90E9EC72308FE65BE0C90DD8 /* creme-caramel.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "creme-caramel.jpg"; sourceTree = "<group>"; };
 		932274E55618F9DCE9E21E25 /* GroceryList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroceryList.swift; sourceTree = "<group>"; };
+		1BC939F79D86435A915A70A6 /* RecipeImageGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeImageGenerator.swift; sourceTree = "<group>"; };
 		968717E418F0B4534C154DCE /* gateau-aux-zuchinis.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "gateau-aux-zuchinis.jpg"; sourceTree = "<group>"; };
 		9AC7FCF65661B96E6EAEFAD1 /* croustille-de-bagels-a-la-mousse-de-crevettes-de-matane.webp */ = {isa = PBXFileReference; path = "croustille-de-bagels-a-la-mousse-de-crevettes-de-matane.webp"; sourceTree = "<group>"; };
 		9AF870DF7D562EDF8C4AD4DB /* boule-au-fromage.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "boule-au-fromage.jpg"; sourceTree = "<group>"; };
@@ -206,6 +217,7 @@
 		D78185DE885AFCCB4AEDC337 /* dessert-ananas.webp */ = {isa = PBXFileReference; path = "dessert-ananas.webp"; sourceTree = "<group>"; };
 		D936409B876D367318D48CB2 /* crab-california-wrap-with-sun.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "crab-california-wrap-with-sun.jpg"; sourceTree = "<group>"; };
 		D9FD0AB2D4E554A0CC72910C /* creton.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = creton.png; sourceTree = "<group>"; };
+		FE826583535948DFB26CC1C9 /* RecipeImagePromptBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeImagePromptBuilder.swift; sourceTree = "<group>"; };
 		DA77317E661B32A8D225F574 /* README.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.txt; sourceTree = "<group>"; };
 		DFC54B4A9F3E4BCED0C96B48 /* escalope-de-veau.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "escalope-de-veau.jpg"; sourceTree = "<group>"; };
 		E0F25A939E0EDC78D5D26D0D /* muffins-a-l-erable.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "muffins-a-l-erable.jpg"; sourceTree = "<group>"; };
@@ -260,7 +272,7 @@
 				AEF9810B420242D4F94AD6C1 /* bouchees-de-concombre-au-concasse.jpg */,
 				65DC772609083982D0C20479 /* bouillon-de-poulet-oriental.jpg */,
 				9AF870DF7D562EDF8C4AD4DB /* boule-au-fromage.jpg */,
-				56428F371FAAE3644C9E0030 /* brochette-de-poulet-a-la-coriandre.webp */,
+				56428F371FAAE3644C9E0030 /* Brochette_de_Poulet_a_la_Coriandre.png */,
 				B8C0CD9A4B96993AC6EB5F74 /* brochettes-de-boeuf-thailandaises.jpg */,
 				2D198AD2A83EB7E74EAE9947 /* brochettes-thailandaise.jpg */,
 				CB99364265A1F9D78FEE74A5 /* buche-de-noel.jpg */,
@@ -345,6 +357,10 @@
 		57DE3880636F97FF3147A761 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				1BC939F79D86435A915A70A6 /* RecipeImageGenerator.swift */,
+				FE826583535948DFB26CC1C9 /* RecipeImagePromptBuilder.swift */,
+				565BD8E81CA54C239CD34947 /* RecipeImageStorage.swift */,
+				13A4C538B0D16438F83F1D2A /* RecipeCardImageGenerator.swift */,
 				111BB93EB66689287DE48C04 /* RecipeStore.swift */,
 			);
 			path = ViewModels;
@@ -418,6 +434,8 @@
 		C19E3D7BD30367C099F375D0 /* Detail */ = {
 			isa = PBXGroup;
 			children = (
+				0B5BA3EB4E7641A8A5E7FD8E /* GenerateRecipeImageButton.swift */,
+				870A33BA18814CA88B1D7052 /* GenerateRecipeImageSheet.swift */,
 				6390F8658A8B06CDB4508D75 /* RecipeDetailView.swift */,
 			);
 			path = Detail;
@@ -546,7 +564,7 @@
 				F7BDE19781943BD0C1FF4A5A /* bouchees-de-concombre-au-concasse.jpg in Resources */,
 				41653F076F2F2C7C07EF3CAA /* bouillon-de-poulet-oriental.jpg in Resources */,
 				F2FFE241D540349F12069276 /* boule-au-fromage.jpg in Resources */,
-				359638CA6BF86205B379ECAA /* brochette-de-poulet-a-la-coriandre.webp in Resources */,
+				359638CA6BF86205B379ECAA /* Brochette_de_Poulet_a_la_Coriandre.png in Resources */,
 				850CA4A2BEFFA31B4193FC7B /* brochettes-de-boeuf-thailandaises.jpg in Resources */,
 				5EC98A73C2A2051D5D14B3E8 /* brochettes-thailandaise.jpg in Resources */,
 				CC0DD8DD816907F49E388DD9 /* buche-de-noel.jpg in Resources */,
@@ -635,6 +653,8 @@
 			files = (
 				BBF30861AF1B1BF61B808A0A /* AddEditRecipeView.swift in Sources */,
 				142A59436EE263E7404D2789 /* ContentView.swift in Sources */,
+				400D44752C6949CE963378BD /* GenerateRecipeImageButton.swift in Sources */,
+				D097D2A04E494F60818C632B /* GenerateRecipeImageSheet.swift in Sources */,
 				60BB3FF0617AC22AE9865629 /* GroceryList.swift in Sources */,
 				79A3E9E76911172D64A81A6D /* GroceryListView.swift in Sources */,
 				5559639D40F7758BD4D9A5C2 /* ImagePickerView.swift in Sources */,
@@ -642,6 +662,10 @@
 				0CB4298BC810604BC581E267 /* MomRecetteApp.swift in Sources */,
 				ECC41F624296B99CF3E6BFA0 /* Recipe.swift in Sources */,
 				DEAFED9B8D987BD83DB89233 /* RecipeCardView.swift in Sources */,
+				38A44E21BC6F90027F4D1AE3 /* RecipeCardImageGenerator.swift in Sources */,
+				0A4B6CE94A4E482BBDC405F1 /* RecipeImageGenerator.swift in Sources */,
+				74C6D0CC357C4EACBFA241DA /* RecipeImagePromptBuilder.swift in Sources */,
+				24B8007D77184269AD33A3A5 /* RecipeImageStorage.swift in Sources */,
 				05701350B068E71C225372DA /* RecipeDetailView.swift in Sources */,
 				378E614E85CEC44D4D8A8E0C /* RecipeStore.swift in Sources */,
 				1FE50FE70649A4CDF6FE130A /* RolodexDeckView.swift in Sources */,
@@ -732,7 +756,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 8GTRA62F55;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -755,7 +779,7 @@
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Choisir une photo pour la recette";
 				INFOPLIST_KEY_NSRemindersUsageDescription = "Envoyer la liste d'epicerie vers Rappels";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.2;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -805,7 +829,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 8GTRA62F55;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -822,7 +846,7 @@
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Choisir une photo pour la recette";
 				INFOPLIST_KEY_NSRemindersUsageDescription = "Envoyer la liste d'epicerie vers Rappels";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.2;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.villeneuves.MomRecette;

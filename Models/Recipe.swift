@@ -13,6 +13,9 @@ struct Recipe: Identifiable, Codable, Hashable {
     var ingredients: [Ingredient] = []
     var steps: [String] = []
     var imageData: Data?
+    var photoFilename: String?
+    var generatedImagePrompt: String?
+    var generatedImageMode: String?
     var notes: String = ""
     var createdAt: Date = Date()
 
@@ -211,6 +214,31 @@ struct Recipe: Identifiable, Codable, Hashable {
     }
 }
 
+enum RecipeImageMode: String, CaseIterable, Codable, Identifiable {
+    case recipeCard
+    case dishPhoto
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .recipeCard:
+            return "Recipe Card"
+        case .dishPhoto:
+            return "Dish Photo"
+        }
+    }
+
+    var shortDescription: String {
+        switch self {
+        case .recipeCard:
+            return "Styled card with title, ingredients, and optional instructions."
+        case .dishPhoto:
+            return "Luxury plated dish photo with no ingredient list text."
+        }
+    }
+}
+
 extension Recipe {
     var ingredientGroups: [IngredientGroup] {
         let grouped = Dictionary(grouping: ingredients, by: \.kind)
@@ -236,6 +264,15 @@ extension Recipe {
         }
 
         return Array(NSOrderedSet(array: keys)) as? [String] ?? keys
+    }
+
+    var ingredientCardLookupKeys: [String] {
+        let keys = photoLookupKeys + photoLookupKeys.map { $0.replacingOccurrences(of: "-", with: "_") }
+        return Array(NSOrderedSet(array: keys)) as? [String] ?? keys
+    }
+
+    var suggestedIngredientCardFilename: String {
+        "\(name.photoLookupKey.replacingOccurrences(of: "-", with: "_")).png"
     }
 }
 

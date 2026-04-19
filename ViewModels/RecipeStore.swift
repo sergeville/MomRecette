@@ -33,6 +33,17 @@ class RecipeStore: ObservableObject {
         }
     }
 
+    enum RecipeImageError: LocalizedError {
+        case recipeNotFound
+
+        var errorDescription: String? {
+            switch self {
+            case .recipeNotFound:
+                return "La recette demandee est introuvable."
+            }
+        }
+    }
+
     @Published var recipes: [Recipe] = []
     @Published var currentGroceryList: GroceryList?
     @Published var searchText: String = ""
@@ -41,6 +52,9 @@ class RecipeStore: ObservableObject {
     private let saveURL: URL
     private let groceryListURL: URL
     private let livePhotoDirectoryURL: URL
+    private let recipeImageStorage: RecipeImageStorage
+    private let recipeImagePromptBuilder: RecipeImagePromptBuilder
+    private let recipeImageGenerator: any RecipeImageGenerating
     private var bundledRecipePhotos: [String: Data]
     private var liveRecipePhotos: [String: Data]
     private var livePhotoDirectorySignature: String
@@ -52,12 +66,20 @@ class RecipeStore: ObservableObject {
         groceryListURL: URL? = nil,
         shouldLoadSeedData: Bool = true,
         livePhotoDirectoryURL: URL? = nil,
-        enablePhotoAutoRefresh: Bool = true
+        enablePhotoAutoRefresh: Bool = true,
+        recipeImageStorage: RecipeImageStorage? = nil,
+        recipeImagePromptBuilder: RecipeImagePromptBuilder = RecipeImagePromptBuilder(),
+        recipeImageGenerator: (any RecipeImageGenerating)? = nil
     ) {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         saveURL = recipesURL ?? docs.appendingPathComponent("momrecette.json")
         self.groceryListURL = groceryListURL ?? docs.appendingPathComponent("momrecette-grocery-list.json")
         self.livePhotoDirectoryURL = livePhotoDirectoryURL ?? docs.appendingPathComponent("RecipePhotos", isDirectory: true)
+        self.recipeImageStorage = recipeImageStorage ?? RecipeImageStorage(
+            directoryURL: docs.appendingPathComponent("RecipeImages", isDirectory: true)
+        )
+        self.recipeImagePromptBuilder = recipeImagePromptBuilder
+        self.recipeImageGenerator = recipeImageGenerator ?? OpenAIRecipeImageGenerator(promptBuilder: recipeImagePromptBuilder)
         bundledRecipePhotos = Self.loadBundledRecipePhotos()
         liveRecipePhotos = Self.loadRecipePhotos(from: self.livePhotoDirectoryURL)
         livePhotoDirectorySignature = Self.recipePhotoDirectorySignature(at: self.livePhotoDirectoryURL)
@@ -116,18 +138,44 @@ class RecipeStore: ObservableObject {
 
     func update(_ recipe: Recipe) {
         if let idx = recipes.firstIndex(where: { $0.id == recipe.id }) {
-            recipes[idx] = Self.sanitizedRecipe(recipe, source: "update")
+            let existing = recipes[idx]
+            var candidate = recipe
+
+            if let existingFilename = existing.photoFilename {
+                let imageDidChange = existing.imageData != recipe.imageData
+                let shouldClearStoredImageReference = recipe.photoFilename == existingFilename && imageDidChange
+                let shouldDeleteStoredImage = recipe.photoFilename != existingFilename || shouldClearStoredImageReference
+
+                if shouldDeleteStoredImage {
+                    try? recipeImageStorage.deleteImage(named: existingFilename)
+                }
+
+                if shouldClearStoredImageReference {
+                    candidate.photoFilename = nil
+                    candidate.generatedImagePrompt = nil
+                    candidate.generatedImageMode = nil
+                }
+            }
+
+            recipes[idx] = Self.sanitizedRecipe(candidate, source: "update")
             save()
         }
     }
 
     func delete(_ recipe: Recipe) {
+        if let photoFilename = recipe.photoFilename {
+            try? recipeImageStorage.deleteImage(named: photoFilename)
+        }
         recipes.removeAll { $0.id == recipe.id }
         save()
     }
 
     func delete(at offsets: IndexSet, in list: [Recipe]) {
     let ids = offsets.map { list[$0].id }
+    let recipesToDelete = recipes.filter { ids.contains($0.id) }
+    recipesToDelete.compactMap(\.photoFilename).forEach { filename in
+        try? recipeImageStorage.deleteImage(named: filename)
+    }
     recipes.removeAll { ids.contains($0.id) }
     save()
     }
@@ -253,6 +301,37 @@ class RecipeStore: ObservableObject {
         return payloads.count
     }
 
+    func generateRecipeImage(for recipe: Recipe, mode: RecipeImageMode, extraDetail: String?) async throws {
+        guard let index = recipes.firstIndex(where: { $0.id == recipe.id }) else {
+            throw RecipeImageError.recipeNotFound
+        }
+
+        let currentRecipe = recipes[index]
+        let imageData = try await recipeImageGenerator.generateImage(
+            for: currentRecipe,
+            mode: mode,
+            extraDetail: extraDetail
+        )
+        let storedImage = try recipeImageStorage.replaceImage(
+            imageData,
+            for: currentRecipe,
+            replacing: currentRecipe.photoFilename
+        )
+
+        var updated = currentRecipe
+        updated.photoFilename = storedImage.filename
+        updated.generatedImagePrompt = recipeImagePromptBuilder.buildPrompt(
+            for: currentRecipe,
+            mode: mode,
+            extraDetail: extraDetail
+        )
+        updated.generatedImageMode = mode.rawValue
+        updated.imageData = storedImage.data
+
+        recipes[index] = Self.sanitizedRecipe(updated, source: "generated image")
+        save()
+    }
+
     // MARK: - Persistence
 
     func save() {
@@ -287,13 +366,29 @@ class RecipeStore: ObservableObject {
     }
 
     private func loadGroceryList() {
-        guard FileManager.default.fileExists(atPath: groceryListURL.path) else { return }
+        guard FileManager.default.fileExists(atPath: groceryListURL.path) else {
+            loadBundledGroceryList()
+            return
+        }
 
         do {
             let data = try Data(contentsOf: groceryListURL)
             currentGroceryList = try JSONDecoder().decode(GroceryList.self, from: data)
         } catch {
             print("RecipeStore load grocery list error: \(error)")
+        }
+    }
+
+    private func loadBundledGroceryList() {
+        guard let url = Bundle.main.url(forResource: "momrecette-grocery-list", withExtension: "json") else { return }
+
+        do {
+            let data = try Data(contentsOf: url)
+            currentGroceryList = try JSONDecoder().decode(GroceryList.self, from: data)
+            saveGroceryList()
+            print("RecipeStore: seeded grocery list from bundle")
+        } catch {
+            print("RecipeStore load bundled grocery list error: \(error)")
         }
     }
 
@@ -320,14 +415,36 @@ class RecipeStore: ObservableObject {
     }
 
     private func hydratePhotosIfAvailable() {
-        guard !(bundledRecipePhotos.isEmpty && liveRecipePhotos.isEmpty) else { return }
+        let hasStoredGeneratedImages = recipes.contains { $0.photoFilename != nil }
+        guard hasStoredGeneratedImages || !(bundledRecipePhotos.isEmpty && liveRecipePhotos.isEmpty) else { return }
 
         var didChange = false
 
         recipes = recipes.map { recipe in
             let sanitized = Self.sanitizedRecipe(recipe, source: "hydrate")
+
+            if let storedPhotoData = storedPhotoData(for: sanitized),
+               sanitized.imageData != storedPhotoData {
+                var updated = sanitized
+                updated.imageData = storedPhotoData
+                didChange = true
+                return updated
+            }
+
+            if sanitized.photoFilename != nil, sanitized.imageData != nil {
+                return sanitized
+            }
+
+            if let livePhotoData = livePhotoData(for: sanitized),
+               sanitized.imageData != livePhotoData {
+                var updated = sanitized
+                updated.imageData = livePhotoData
+                didChange = true
+                return updated
+            }
+
             guard sanitized.imageData == nil else { return sanitized }
-            guard let photoData = photoData(for: sanitized) else { return sanitized }
+            guard let photoData = bundledPhotoData(for: sanitized) else { return sanitized }
 
             var updated = sanitized
             updated.imageData = photoData
@@ -340,11 +457,22 @@ class RecipeStore: ObservableObject {
         }
     }
 
-    private func photoData(for recipe: Recipe) -> Data? {
+    private func storedPhotoData(for recipe: Recipe) -> Data? {
+        guard let photoFilename = recipe.photoFilename else { return nil }
+        return recipeImageStorage.loadImage(named: photoFilename)
+    }
+
+    private func livePhotoData(for recipe: Recipe) -> Data? {
         for key in recipe.photoLookupKeys {
             if let data = liveRecipePhotos[key] {
                 return data
             }
+        }
+        return nil
+    }
+
+    private func bundledPhotoData(for recipe: Recipe) -> Data? {
+        for key in recipe.photoLookupKeys {
             if let data = bundledRecipePhotos[key] {
                 return data
             }
@@ -434,20 +562,35 @@ class RecipeStore: ObservableObject {
     private static func loadRecipePhotos(from directoryURL: URL) -> [String: Data] {
     let fileManager = FileManager.default
     try? fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
-    
-    var photos: [String: Data] = [:]
-    let urls = photoFileURLs(in: directoryURL)
-    
+
+    let resourceKeys: [URLResourceKey] = [.contentModificationDateKey]
+    let urls = photoFileURLs(in: directoryURL, includingPropertiesForKeys: resourceKeys)
+    var candidates: [String: (data: Data, modified: Date, extensionRank: Int)] = [:]
+
     for url in urls {
         let key = url.deletingPathExtension().lastPathComponent.photoLookupKey
-        guard photos[key] == nil, let data = try? Data(contentsOf: url) else { continue }
+        guard let data = try? Data(contentsOf: url) else { continue }
         guard let validated = validatedImageData(data, source: "live photo file", name: url.lastPathComponent) else {
             continue
         }
-        photos[key] = validated
+
+        let values = try? url.resourceValues(forKeys: Set(resourceKeys))
+        let modified = values?.contentModificationDate ?? .distantPast
+        let extensionRank = supportedRecipePhotoExtensions.firstIndex(of: url.pathExtension.lowercased()) ?? supportedRecipePhotoExtensions.count
+
+        if let existing = candidates[key] {
+            if existing.modified > modified {
+                continue
+            }
+            if existing.modified == modified && existing.extensionRank <= extensionRank {
+                continue
+            }
+        }
+
+        candidates[key] = (validated, modified, extensionRank)
     }
-    
-    return photos
+
+    return candidates.mapValues(\.data)
     }
 
     private static func loadBundledRecipePhotos() -> [String: Data] {

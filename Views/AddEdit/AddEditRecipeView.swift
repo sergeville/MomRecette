@@ -19,6 +19,10 @@ struct AddEditRecipeView: View {
             _steps        = State(initialValue: r.steps)
             _notes        = State(initialValue: r.notes)
             _imageData    = State(initialValue: r.imageData)
+            _photoFilename = State(initialValue: r.photoFilename)
+            _generatedImagePrompt = State(initialValue: r.generatedImagePrompt)
+            _generatedImageMode = State(initialValue: r.generatedImageMode)
+            _createdAt = State(initialValue: r.createdAt)
         }
     }
 
@@ -32,6 +36,10 @@ struct AddEditRecipeView: View {
     @State private var steps: [String] = [""]
     @State private var notes: String = ""
     @State private var imageData: Data? = nil
+    @State private var photoFilename: String? = nil
+    @State private var generatedImagePrompt: String? = nil
+    @State private var generatedImageMode: String? = nil
+    @State private var createdAt: Date = Date()
 
     @State private var nameError = false
 
@@ -170,8 +178,11 @@ struct AddEditRecipeView: View {
             ingredients: ingredients.filter { !$0.name.isEmpty },
             steps: steps.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty },
             imageData: imageData,
+            photoFilename: photoFilename,
+            generatedImagePrompt: generatedImagePrompt,
+            generatedImageMode: generatedImageMode,
             notes: notes,
-            createdAt: Date()
+            createdAt: createdAt
         )
 
         if isEditing {
@@ -183,7 +194,9 @@ struct AddEditRecipeView: View {
     }
 }
 
+#if DEBUG
 #Preview {
     AddEditRecipeView()
         .environmentObject(RecipeStore())
 }
+#endif
