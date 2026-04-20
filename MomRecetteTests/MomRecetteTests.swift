@@ -1,6 +1,7 @@
 import XCTest
 @testable import MomRecette
 import UIKit
+import CoreData
 
 @MainActor
 final class MomRecetteTests: XCTestCase {
@@ -25,7 +26,8 @@ final class MomRecetteTests: XCTestCase {
     private func makeStore(
         directory: URL? = nil,
         livePhotoDirectoryURL: URL? = nil,
-        recipeImageGenerator: (any RecipeImageGenerating)? = nil
+        recipeImageGenerator: (any RecipeImageGenerating)? = nil,
+        persistentContainer: RecipePersistentContainer? = nil
     ) throws -> RecipeStore {
         let directory = directory ?? FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -39,8 +41,13 @@ final class MomRecetteTests: XCTestCase {
             recipeImageStorage: RecipeImageStorage(
                 directoryURL: directory.appendingPathComponent("RecipeImages", isDirectory: true)
             ),
-            recipeImageGenerator: recipeImageGenerator
+            recipeImageGenerator: recipeImageGenerator,
+            persistentContainer: persistentContainer
         )
+    }
+
+    private func makePersistentContainer(storeURL: URL) throws -> RecipePersistentContainer {
+        try RecipePersistentContainer(syncMode: .localOnly, storeURL: storeURL)
     }
 
     func testCategoryDetection() {
@@ -538,6 +545,105 @@ final class MomRecetteTests: XCTestCase {
         XCTAssertEqual(reloaded.recipes.first?.caloriesPerServing, 620)
     }
 
+    func testStoreMigratesLegacyJSONIntoCoreDataWhenPersistentContainerIsProvided() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+
+        let recipesURL = directory.appendingPathComponent("recipes.json")
+        let groceryURL = directory.appendingPathComponent("grocery.json")
+        let livePhotoURL = directory.appendingPathComponent("RecipePhotos", isDirectory: true)
+        let recipeImagesURL = directory.appendingPathComponent("RecipeImages", isDirectory: true)
+        let persistentStoreURL = directory.appendingPathComponent("RecipeStore.sqlite")
+
+        let legacyRecipe = Recipe(
+            name: "Migration locale",
+            category: .plats,
+            caloriesPerServing: 540,
+            ingredients: [.init(quantity: "2", name: "pommes de terre")],
+            steps: ["Cuire doucement."],
+            notes: "Ancienne recette JSON"
+        )
+        try JSONEncoder().encode([legacyRecipe]).write(to: recipesURL)
+
+        let persistentContainer = try makePersistentContainer(storeURL: persistentStoreURL)
+
+        let store = RecipeStore(
+            recipesURL: recipesURL,
+            groceryListURL: groceryURL,
+            shouldLoadSeedData: false,
+            livePhotoDirectoryURL: livePhotoURL,
+            enablePhotoAutoRefresh: false,
+            recipeImageStorage: RecipeImageStorage(directoryURL: recipeImagesURL),
+            persistentContainer: persistentContainer
+        )
+
+        XCTAssertEqual(store.recipes.count, 1)
+        XCTAssertEqual(store.recipes.first?.name, "Migration locale")
+        XCTAssertEqual(store.recipes.first?.caloriesPerServing, 540)
+        XCTAssertEqual(store.recipes.first?.ingredients.count, 1)
+        XCTAssertEqual(store.recipes.first?.steps, ["Cuire doucement."])
+
+        let countRequest = NSFetchRequest<NSFetchRequestResult>(entityName: RecipePersistentContainer.EntityName.recipe)
+        XCTAssertEqual(try persistentContainer.viewContext.count(for: countRequest), 1)
+    }
+
+    func testStorePersistsFavoriteChangesThroughCoreDataRepository() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+
+        let persistentStoreURL = directory.appendingPathComponent("RecipeStore.sqlite")
+        let firstContainer = try makePersistentContainer(storeURL: persistentStoreURL)
+        let store = try makeStore(directory: directory, persistentContainer: firstContainer)
+        let recipe = Recipe(name: "Favori Core Data", category: .plats)
+
+        store.add(recipe)
+        let insertedRecipe = try XCTUnwrap(store.recipes.first)
+        store.toggleFavorite(for: insertedRecipe)
+
+        let secondContainer = try makePersistentContainer(storeURL: persistentStoreURL)
+        let reloaded = try makeStore(directory: directory, persistentContainer: secondContainer)
+
+        XCTAssertEqual(reloaded.recipes.count, 1)
+        XCTAssertEqual(reloaded.recipes.first?.name, "Favori Core Data")
+        XCTAssertEqual(reloaded.recipes.first?.isFavorite, true)
+    }
+
+    func testStoreReconcilesDuplicateCoreDataRecipesOnLoad() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+
+        let persistentStoreURL = directory.appendingPathComponent("RecipeStore.sqlite")
+        let firstContainer = try makePersistentContainer(storeURL: persistentStoreURL)
+        let store = try makeStore(directory: directory, persistentContainer: firstContainer)
+
+        store.add(Recipe(name: "Doublon Core Data", category: .plats, notes: "Version courte"))
+        store.add(
+            Recipe(
+                name: "Doublon Core Data",
+                category: .plats,
+                caloriesPerServing: 480,
+                ingredients: [.init(quantity: "2", name: "oeufs")],
+                steps: ["Assembler", "Cuire"],
+                isFavorite: true,
+                notes: "Version complete pour la reconciliation"
+            )
+        )
+
+        let secondContainer = try makePersistentContainer(storeURL: persistentStoreURL)
+        let reloaded = try makeStore(directory: directory, persistentContainer: secondContainer)
+
+        XCTAssertEqual(reloaded.recipes.count, 1)
+        XCTAssertEqual(reloaded.recipes.first?.name, "Doublon Core Data")
+        XCTAssertEqual(reloaded.recipes.first?.isFavorite, true)
+        XCTAssertEqual(reloaded.recipes.first?.caloriesPerServing, 480)
+        XCTAssertEqual(reloaded.recipes.first?.ingredients.count, 1)
+        XCTAssertEqual(reloaded.recipes.first?.steps.count, 2)
+        XCTAssertEqual(reloaded.recipes.first?.notes, "Version complete pour la reconciliation")
+
+        let countRequest = NSFetchRequest<NSFetchRequestResult>(entityName: RecipePersistentContainer.EntityName.recipe)
+        XCTAssertEqual(try secondContainer.viewContext.count(for: countRequest), 1)
+    }
+
     func testToggleFavoriteUpdatesRecipeState() throws {
         let store = try makeStore()
         let recipe = Recipe(name: "Pates au pesto", category: .plats)
@@ -588,5 +694,204 @@ final class MomRecetteTests: XCTestCase {
         XCTAssertNil(migrated.imageData)
         XCTAssertEqual(migrated.recipeCardFilename, "legacy-card.png")
         XCTAssertEqual(migrated.generatedRecipeCardPrompt, "card prompt")
+    }
+
+    func testSyncPackageRoundTripPreservesRecipesImagesAndGroceryList() throws {
+        let sourceDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: sourceDirectory, withIntermediateDirectories: true)
+
+        let sourceStore = try makeStore(directory: sourceDirectory)
+        let livePhotoDirectory = sourceDirectory.appendingPathComponent("RecipePhotos", isDirectory: true)
+        let imageStorage = RecipeImageStorage(
+            directoryURL: sourceDirectory.appendingPathComponent("RecipeImages", isDirectory: true)
+        )
+
+        let recipe = Recipe(
+            name: "Sync Package",
+            category: .plats,
+            ingredients: [.init(quantity: "2", name: "oeufs")],
+            steps: ["Battre", "Cuire"],
+            notes: "Version exportable"
+        )
+        sourceStore.add(recipe)
+
+        var enrichedRecipe = try XCTUnwrap(sourceStore.recipes.first)
+        let dishPhoto = try imageStorage.replaceImage(
+            makeImage(size: CGSize(width: 32, height: 32), color: .systemBlue).pngData()!,
+            for: enrichedRecipe,
+            replacing: nil
+        )
+        let recipeCard = try imageStorage.replaceImage(
+            makeImage(size: CGSize(width: 32, height: 32), color: .systemRed).pngData()!,
+            for: enrichedRecipe,
+            replacing: nil
+        )
+        enrichedRecipe.photoFilename = dishPhoto.filename
+        enrichedRecipe.imageData = dishPhoto.data
+        enrichedRecipe.generatedImageMode = RecipeImageMode.dishPhoto.rawValue
+        enrichedRecipe.generatedImagePrompt = "photo prompt"
+        enrichedRecipe.recipeCardFilename = recipeCard.filename
+        enrichedRecipe.generatedRecipeCardPrompt = "card prompt"
+        sourceStore.update(enrichedRecipe)
+
+        try FileManager.default.createDirectory(at: livePhotoDirectory, withIntermediateDirectories: true)
+        try makeJPEGData().write(to: livePhotoDirectory.appendingPathComponent("sync-package.jpg"))
+        sourceStore.refreshRecipePhotosIfNeeded(force: true)
+        sourceStore.createGroceryList(for: try XCTUnwrap(sourceStore.recipes.first))
+
+        let exportResult = try sourceStore.exportSyncPackageToTemporaryFile()
+        let packageData = try Data(contentsOf: exportResult.packageURL)
+
+        let destinationDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: destinationDirectory, withIntermediateDirectories: true)
+        let destinationStore = try makeStore(directory: destinationDirectory)
+
+        let importResult = try destinationStore.importSyncPackage(from: packageData)
+        let restoredRecipe = try XCTUnwrap(destinationStore.recipes.first)
+
+        XCTAssertEqual(destinationStore.recipes.count, 1)
+        XCTAssertEqual(restoredRecipe.name, "Sync Package")
+        XCTAssertEqual(importResult.recipeCount, 1)
+        XCTAssertTrue(importResult.groceryListIncluded)
+        XCTAssertNotNil(destinationStore.currentGroceryList)
+        XCTAssertEqual(destinationStore.currentGroceryList?.recipeName, "Sync Package")
+        XCTAssertNotNil(destinationStore.recipeImageURL(for: restoredRecipe))
+        XCTAssertNotNil(destinationStore.recipeCardImageData(for: restoredRecipe))
+        XCTAssertTrue(
+            FileManager.default.fileExists(
+                atPath: destinationDirectory
+                    .appendingPathComponent("RecipePhotos/sync-package.jpg")
+                    .path
+            )
+        )
+        XCTAssertTrue(FileManager.default.fileExists(atPath: importResult.backupURL.path))
+    }
+
+    func testPrepareSyncPackageExportIncludesFilenameAndPayload() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let store = try makeStore(directory: directory)
+
+        store.add(Recipe(name: "Export Payload", category: .plats))
+        let payload = try store.prepareSyncPackageExport()
+        let decoded = try RecipeSyncPackage.decoder.decode(RecipeSyncPackage.self, from: payload.data)
+
+        XCTAssertEqual(payload.filename, "MomRecette-Sync-Latest.json")
+        XCTAssertEqual(payload.recipeCount, 1)
+        XCTAssertEqual(decoded.recipes.count, 1)
+        XCTAssertEqual(decoded.recipes.first?.name, "Export Payload")
+    }
+
+    func testLocalCloudSyncMigrationImportsRealMacLibraryWhenEnabled() throws {
+        let localValidationFlagURL = URL(fileURLWithPath: "/tmp/MOMRECETTE_RUN_LOCAL_SYNC_VALIDATION.flag")
+        let shouldRunValidation =
+            ProcessInfo.processInfo.environment["MOMRECETTE_RUN_LOCAL_SYNC_VALIDATION"] == "1" ||
+            FileManager.default.fileExists(atPath: localValidationFlagURL.path)
+
+        guard shouldRunValidation else {
+            throw XCTSkip("Set MOMRECETTE_RUN_LOCAL_SYNC_VALIDATION=1 to run the real-library migration validation.")
+        }
+
+        let documentsURL = URL(fileURLWithPath: NSHomeDirectory())
+            .appendingPathComponent("Library/Containers/com.villeneuves.MomRecette/Data/Documents", isDirectory: true)
+        let recipesURL = documentsURL.appendingPathComponent("momrecette.json")
+        guard FileManager.default.fileExists(atPath: recipesURL.path) else {
+            throw XCTSkip("No live MomRecette library was found at \(recipesURL.path).")
+        }
+
+        let validationRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent("MomRecette-CloudSyncValidation-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: validationRoot, withIntermediateDirectories: true)
+        let validationStoreURL = validationRoot.appendingPathComponent("RecipeStore.sqlite")
+
+        let store = RecipeStore(
+            recipesURL: recipesURL,
+            groceryListURL: documentsURL.appendingPathComponent("momrecette-grocery-list.json"),
+            shouldLoadSeedData: false,
+            livePhotoDirectoryURL: documentsURL.appendingPathComponent("RecipePhotos", isDirectory: true),
+            enablePhotoAutoRefresh: false,
+            recipeImageStorage: RecipeImageStorage(
+                directoryURL: documentsURL.appendingPathComponent("RecipeImages", isDirectory: true)
+            )
+        )
+
+        let backup = try store.createCloudSyncMigrationBackup(persistentStoreURL: validationStoreURL)
+        XCTAssertFalse(backup.copiedItems.isEmpty)
+
+        let persistentContainer = try RecipePersistentContainer(
+            syncMode: .localOnly,
+            storeURL: validationStoreURL
+        )
+        let report = try store.importLibraryIntoPersistentStore(persistentContainer)
+
+        let countRequest = NSFetchRequest<NSFetchRequestResult>(entityName: RecipePersistentContainer.EntityName.recipe)
+        let importedRecipeCount = try persistentContainer.viewContext.count(for: countRequest)
+
+        print("""
+        Local cloud sync validation:
+        - backup: \(backup.backupRootURL.path)
+        - processed recipes: \(report.processedRecipeCount)
+        - inserted recipes: \(report.insertedRecipeCount)
+        - updated recipes: \(report.updatedRecipeCount)
+        - imported dish photos: \(report.importedDishPhotoAssetCount)
+        - imported recipe cards: \(report.importedRecipeCardAssetCount)
+        - imported live photos: \(report.importedLivePhotoAssetCount)
+        - bundle-backed recipes: \(report.bundleBackedRecipeCount)
+        - final recipe count: \(report.finalRecipeCount)
+        - validation store: \(validationStoreURL.path)
+        """)
+
+        XCTAssertEqual(report.processedRecipeCount, store.recipes.count)
+        XCTAssertEqual(report.finalRecipeCount, importedRecipeCount)
+        XCTAssertGreaterThan(importedRecipeCount, 0)
+        XCTAssertGreaterThanOrEqual(report.importedDishPhotoAssetCount + report.bundleBackedRecipeCount, 1)
+    }
+
+    func testLocalCloudSyncCanonicalizesProductionStoreWhenEnabled() throws {
+        let canonicalizationFlagURL = URL(fileURLWithPath: "/tmp/MOMRECETTE_RUN_PRODUCTION_STORE_CANONICALIZATION.flag")
+        let shouldRunValidation =
+            ProcessInfo.processInfo.environment["MOMRECETTE_RUN_PRODUCTION_STORE_CANONICALIZATION"] == "1" ||
+            FileManager.default.fileExists(atPath: canonicalizationFlagURL.path)
+
+        guard shouldRunValidation else {
+            throw XCTSkip("Set MOMRECETTE_RUN_PRODUCTION_STORE_CANONICALIZATION=1 to run production-store canonicalization.")
+        }
+
+        let documentsURL = URL(fileURLWithPath: NSHomeDirectory())
+            .appendingPathComponent("Library/Containers/com.villeneuves.MomRecette/Data/Documents", isDirectory: true)
+        let recipesURL = documentsURL.appendingPathComponent("momrecette.json")
+        guard FileManager.default.fileExists(atPath: recipesURL.path) else {
+            throw XCTSkip("No live MomRecette library was found at \(recipesURL.path).")
+        }
+
+        let recipeData = try Data(contentsOf: recipesURL)
+        let expectedRecipes = try JSONDecoder().decode([Recipe].self, from: recipeData)
+
+        let productionStoreURL = URL(fileURLWithPath: NSHomeDirectory())
+            .appendingPathComponent("Library/Application Support/MomRecette/RecipeStore.sqlite")
+        let migrationKey = "MomRecette.PersistentStore.LegacyMigration.\(productionStoreURL.path.replacingOccurrences(of: "/", with: "_"))"
+        UserDefaults.standard.removeObject(forKey: migrationKey)
+
+        let persistentContainer = try RecipePersistentContainer(
+            syncMode: .localOnly,
+            storeURL: productionStoreURL
+        )
+        let store = RecipeStore(
+            recipesURL: recipesURL,
+            groceryListURL: documentsURL.appendingPathComponent("momrecette-grocery-list.json"),
+            shouldLoadSeedData: false,
+            livePhotoDirectoryURL: documentsURL.appendingPathComponent("RecipePhotos", isDirectory: true),
+            enablePhotoAutoRefresh: false,
+            recipeImageStorage: RecipeImageStorage(
+                directoryURL: documentsURL.appendingPathComponent("RecipeImages", isDirectory: true)
+            ),
+            persistentContainer: persistentContainer
+        )
+
+        let countRequest = NSFetchRequest<NSFetchRequestResult>(entityName: RecipePersistentContainer.EntityName.recipe)
+        let storedCount = try persistentContainer.viewContext.count(for: countRequest)
+
+        XCTAssertEqual(store.recipes.count, expectedRecipes.count)
+        XCTAssertEqual(storedCount, expectedRecipes.count)
     }
 }

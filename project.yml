@@ -10,6 +10,8 @@ settings:
   base:
     DEVELOPMENT_TEAM: 8GTRA62F55
     CODE_SIGN_STYLE: Automatic
+    CODE_SIGN_ENTITLEMENTS: MomRecette.entitlements
+    "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": ""
     PRODUCT_BUNDLE_IDENTIFIER: com.villeneuves.MomRecette
     MARKETING_VERSION: "1.0.6"
     CURRENT_PROJECT_VERSION: "7"
@@ -30,6 +32,8 @@ targets:
       base:
         DEVELOPMENT_TEAM: 8GTRA62F55
         CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: MomRecette.entitlements
+        "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": ""
         PRODUCT_BUNDLE_IDENTIFIER: com.villeneuves.MomRecette
         SWIFT_VERSION: "5.9"
         SUPPORTS_MACCATALYST: YES
@@ -73,6 +77,8 @@ targets:
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: true
           UISceneConfigurations: {}
+        UIBackgroundModes:
+          - remote-notification
         NSPhotoLibraryUsageDescription: "Choisir une photo pour la recette"
         NSCameraUsageDescription: "Prendre une photo du plat"
         NSRemindersUsageDescription: "Envoyer la liste d'epicerie vers Rappels"

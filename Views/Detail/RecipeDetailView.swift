@@ -46,6 +46,7 @@ struct RecipeDetailView: View {
     @State private var showGroceryList = false
     @State private var showGenerateImageSheet = false
     @State private var showCookingMode = false
+    @State private var showSync = false
     @State private var sharePayload: SharePayload?
 
     let recipe: Recipe
@@ -150,6 +151,14 @@ struct RecipeDetailView: View {
 
                 Menu {
                     Button {
+                        showSync = true
+                    } label: {
+                        Label("Sync", systemImage: "arrow.triangle.2.circlepath")
+                    }
+
+                    Divider()
+
+                    Button {
                         showEdit = true
                     } label: {
                         Label("Modifier", systemImage: "pencil")
@@ -179,8 +188,14 @@ struct RecipeDetailView: View {
         .sheet(isPresented: $showEdit) {
             AddEditRecipeView(recipe: current)
         }
+        .sheet(isPresented: $showSync) {
+            ImportView()
+        }
         .sheet(isPresented: $showGroceryList) {
             GroceryListView()
+        }
+        .sheet(item: $sharePayload) { payload in
+            ShareSheet(items: payload.items)
         }
         .fullScreenCover(isPresented: $showCookingMode) {
             CookingModeView(recipe: current)

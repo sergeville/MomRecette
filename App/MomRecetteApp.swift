@@ -43,6 +43,11 @@ enum AppAppearanceMode: String, CaseIterable, Identifiable {
 }
 
 struct MomRecetteSetup {
+    struct CloudSync {
+        static let containerIdentifier = "iCloud.com.villeneuves.MomRecette"
+        static let disableEnvironmentKey = "MOMRECETTE_DISABLE_CLOUDKIT"
+    }
+
     struct RecipeWorkspace {
         static let defaultSection: RecipeWorkspaceSection = .ingredients
 
@@ -63,17 +68,17 @@ struct MomRecetteSetup {
     }
 
     struct SettingsPanel {
-        static let minimumWidth: CGFloat = 520
-        static let idealWidth: CGFloat = 560
-        static let minimumHeight: CGFloat = 420
-        static let idealHeight: CGFloat = 460
+        static let minimumWidth: CGFloat = 620
+        static let idealWidth: CGFloat = 680
+        static let minimumHeight: CGFloat = 560
+        static let idealHeight: CGFloat = 640
     }
 }
 
 @main
 struct MomRecetteApp: App {
     @UIApplicationDelegateAdaptor(MomRecetteAppDelegate.self) private var appDelegate
-    @StateObject private var store = RecipeStore()
+    @StateObject private var store = Self.makeDefaultStore()
     @AppStorage(MomRecetteSetup.Appearance.modeStorageKey)
     private var appearanceModeRawValue = MomRecetteSetup.Appearance.defaultMode.rawValue
 
@@ -87,6 +92,52 @@ struct MomRecetteApp: App {
                 .environmentObject(store)
                 .tint(Color(red: 0.82, green: 0.35, blue: 0.20)) // Warm terracotta accent
                 .preferredColorScheme(appearanceMode.colorScheme)
+        }
+    }
+
+    private static func makeDefaultStore() -> RecipeStore {
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
+            let rootURL = FileManager.default.temporaryDirectory
+                .appendingPathComponent("MomRecette-Tests-\(UUID().uuidString)", isDirectory: true)
+            try? FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+            let persistentContainer = try? RecipePersistentContainer(
+                syncMode: .localOnly,
+                storeURL: rootURL.appendingPathComponent("RecipeStore.sqlite")
+            )
+
+            return RecipeStore(
+                recipesURL: rootURL.appendingPathComponent("momrecette.json"),
+                groceryListURL: rootURL.appendingPathComponent("momrecette-grocery-list.json"),
+                shouldLoadSeedData: false,
+                livePhotoDirectoryURL: rootURL.appendingPathComponent("RecipePhotos", isDirectory: true),
+                enablePhotoAutoRefresh: false,
+                recipeImageStorage: RecipeImageStorage(
+                    directoryURL: rootURL.appendingPathComponent("RecipeImages", isDirectory: true)
+                ),
+                persistentContainer: persistentContainer
+            )
+        }
+
+        let persistentContainer = makePersistentContainer()
+        return RecipeStore(persistentContainer: persistentContainer)
+    }
+
+    private static func makePersistentContainer() -> RecipePersistentContainer? {
+        let environment = ProcessInfo.processInfo.environment
+
+        if environment[MomRecetteSetup.CloudSync.disableEnvironmentKey] == "1" {
+            return try? RecipePersistentContainer(syncMode: .localOnly)
+        }
+
+        do {
+            return try RecipePersistentContainer(
+                syncMode: .cloudKit(containerIdentifier: MomRecetteSetup.CloudSync.containerIdentifier)
+            )
+        } catch {
+            #if DEBUG
+            print("CloudKit persistent container unavailable, falling back to local Core Data: \(error.localizedDescription)")
+            #endif
+            return try? RecipePersistentContainer(syncMode: .localOnly)
         }
     }
 }
@@ -250,8 +301,13 @@ private extension CGRect {
 }
 
 struct AppSettingsView: View {
+    @EnvironmentObject private var store: RecipeStore
     @AppStorage(MomRecetteSetup.Appearance.modeStorageKey)
     private var appearanceModeRawValue = MomRecetteSetup.Appearance.defaultMode.rawValue
+    @State private var syncPreparationReport: RecipeStore.CloudSyncPreparationReport?
+    @State private var migrationPlan: RecipeMigrationPlan?
+    @State private var latestBackup: RecipeMigrationBackup?
+    @State private var syncDiagnosticsError: String?
 
     private var appearanceMode: AppAppearanceMode {
         AppAppearanceMode(rawValue: appearanceModeRawValue) ?? MomRecetteSetup.Appearance.defaultMode
@@ -283,8 +339,106 @@ struct AppSettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+
+                Section("Sync local") {
+                    Label(localSyncStatusTitle, systemImage: localSyncStatusImage)
+                        .font(.headline)
+
+                    if let syncPreparationReport {
+                        LabeledContent("Mode actif") {
+                            Text(syncPreparationReport.activeSyncModeTitle)
+                        }
+                        if let activeCloudKitContainerIdentifier = syncPreparationReport.activeCloudKitContainerIdentifier {
+                            LabeledContent("Container iCloud") {
+                                Text(activeCloudKitContainerIdentifier)
+                            }
+                        }
+                        if let persistentStoreURL = syncPreparationReport.persistentStoreURL {
+                            LabeledContent("SQLite actif") {
+                                Text(persistentStoreURL.lastPathComponent)
+                            }
+                            Text(persistentStoreURL.path)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .textSelection(.enabled)
+                        }
+                        LabeledContent("Recettes") {
+                            Text("\(syncPreparationReport.recipeCount)")
+                        }
+                        LabeledContent("Favoris") {
+                            Text("\(syncPreparationReport.favoriteCount)")
+                        }
+                        LabeledContent("Photos plat generees") {
+                            Text("\(syncPreparationReport.generatedDishPhotoCount)")
+                        }
+                        LabeledContent("Recipe Cards") {
+                            Text("\(syncPreparationReport.generatedRecipeCardCount)")
+                        }
+                        LabeledContent("Photos importees") {
+                            Text("\(syncPreparationReport.importedLivePhotoCount)")
+                        }
+                        LabeledContent("Images orphelines") {
+                            Text("\(syncPreparationReport.unreferencedGeneratedImageCount)")
+                                .foregroundStyle(syncPreparationReport.unreferencedGeneratedImageCount > 0 ? .orange : .secondary)
+                        }
+                    }
+
+                    if let migrationPlan {
+                        LabeledContent("Magasin local") {
+                            Text(migrationPlan.persistentStoreURL.lastPathComponent)
+                        }
+                        Text(migrationPlan.persistentStoreURL.path)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+
+                        LabeledContent("Prochaine sauvegarde") {
+                            Text(migrationPlan.backupRootURL.lastPathComponent)
+                        }
+                        Text(migrationPlan.recommendedNextStep)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        if migrationPlan.warnings.isEmpty == false {
+                            ForEach(Array(migrationPlan.warnings.enumerated()), id: \.offset) { _, warning in
+                                Label(warning, systemImage: "exclamationmark.triangle")
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                            }
+                        }
+                    }
+
+                    if let latestBackup {
+                        LabeledContent("Derniere sauvegarde") {
+                            Text(latestBackup.backupRootURL.lastPathComponent)
+                        }
+                        Text(latestBackup.backupRootURL.path)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                    }
+
+                    if let syncDiagnosticsError {
+                        Label(syncDiagnosticsError, systemImage: "xmark.octagon")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+
+                    HStack {
+                        Button("Actualiser") {
+                            refreshSyncDiagnostics()
+                        }
+
+                        Button("Creer une sauvegarde") {
+                            createMigrationBackup()
+                        }
+                    }
+                }
             }
             .navigationTitle("Settings")
+        }
+        .task {
+            refreshSyncDiagnostics()
         }
         .frame(
             minWidth: MomRecetteSetup.SettingsPanel.minimumWidth,
@@ -292,5 +446,40 @@ struct AppSettingsView: View {
             minHeight: MomRecetteSetup.SettingsPanel.minimumHeight,
             idealHeight: MomRecetteSetup.SettingsPanel.idealHeight
         )
+    }
+
+    private var localSyncStatusTitle: String {
+        guard let migrationPlan else {
+            return "Diagnostic local indisponible"
+        }
+
+        return migrationPlan.needsMigration ? "Migration Core Data requise" : "Core Data local actif"
+    }
+
+    private var localSyncStatusImage: String {
+        guard let migrationPlan else {
+            return "questionmark.circle"
+        }
+
+        return migrationPlan.needsMigration ? "arrow.triangle.2.circlepath.circle" : "externaldrive.badge.checkmark"
+    }
+
+    private func refreshSyncDiagnostics() {
+        do {
+            syncPreparationReport = store.cloudSyncPreparationReport()
+            migrationPlan = try store.cloudSyncMigrationPlan()
+            syncDiagnosticsError = nil
+        } catch {
+            syncDiagnosticsError = error.localizedDescription
+        }
+    }
+
+    private func createMigrationBackup() {
+        do {
+            latestBackup = try store.createCloudSyncMigrationBackup()
+            refreshSyncDiagnostics()
+        } catch {
+            syncDiagnosticsError = error.localizedDescription
+        }
     }
 }

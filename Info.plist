@@ -26,6 +26,10 @@
 	<string>Choisir une photo pour la recette</string>
 	<key>NSRemindersUsageDescription</key>
 	<string>Envoyer la liste d'epicerie vers Rappels</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -30,6 +30,7 @@
 		2259B5A595CB79CC8E0D842A /* glacage-pour-gateau.jpg in Resources */ = {isa = PBXBuildFile; fileRef = E1B5158FF8D4CAF7478EB377 /* glacage-pour-gateau.jpg */; };
 		24395C565391D2AAA403F1E7 /* filet-de-porc-au-miel-et-au-balsamique.jpg in Resources */ = {isa = PBXBuildFile; fileRef = BD6DD8AD901CC0BACA0F5D77 /* filet-de-porc-au-miel-et-au-balsamique.jpg */; };
 		24B8007D77184269AD33A3A5 /* RecipeImageStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 565BD8E81CA54C239CD34947 /* RecipeImageStorage.swift */; };
+		26C1D3B4A5E6478190B2C3D4 /* RecipeMigrationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26C1D3B4A5E6478190B2C3D3 /* RecipeMigrationCoordinator.swift */; };
 		285B8399D46A4908342DDA08 /* momrecette_bundle.json in Resources */ = {isa = PBXBuildFile; fileRef = BE07E6FA8AE696FDF3C1245D /* momrecette_bundle.json */; };
 		2E802DBF5FE9565B379CFBB2 /* filet-de-porc-a-la-moutade-de-meaux.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 4DD28923F51DEB9C04BBFCB9 /* filet-de-porc-a-la-moutade-de-meaux.jpg */; };
 		2F9ED667A07EDB2E4475911B /* fondue-japonaise.png in Resources */ = {isa = PBXBuildFile; fileRef = 1C46FFDD1C6199FC27239678 /* fondue-japonaise.png */; };
@@ -41,6 +42,9 @@
 		359638CA6BF86205B379ECAA /* Brochette_de_Poulet_a_la_Coriandre.png in Resources */ = {isa = PBXBuildFile; fileRef = 56428F371FAAE3644C9E0030 /* Brochette_de_Poulet_a_la_Coriandre.png */; };
 		378E614E85CEC44D4D8A8E0C /* RecipeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 111BB93EB66689287DE48C04 /* RecipeStore.swift */; };
 		38A44E21BC6F90027F4D1AE3 /* RecipeCardImageGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13A4C538B0D16438F83F1D2A /* RecipeCardImageGenerator.swift */; };
+		39D4E5F6A7B84910C1D2E3F4 /* RecipePersistentContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39D4E5F6A7B84910C1D2E3F3 /* RecipePersistentContainer.swift */; };
+		3A4B5C6D7E8F901234567890 /* RecipeCoreDataImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A4B5C6D7E8F901234567891 /* RecipeCoreDataImporter.swift */; };
+		3B5C6D7E8F90123456789012 /* RecipeCoreDataRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B5C6D7E8F90123456789013 /* RecipeCoreDataRepository.swift */; };
 		3CAF0932076E87F0B0CD9351 /* gateau-aux-epices.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 89CC12107EE6D368F4924EAB /* gateau-aux-epices.jpg */; };
 		3EAE1B12DEA96F8D09CD53A2 /* filet-de-porc-aux-canneberges.jpg in Resources */ = {isa = PBXBuildFile; fileRef = CC43F61CEAB219CE510C0BA6 /* filet-de-porc-aux-canneberges.jpg */; };
 		41653F076F2F2C7C07EF3CAA /* bouillon-de-poulet-oriental.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 65DC772609083982D0C20479 /* bouillon-de-poulet-oriental.jpg */; };
@@ -143,10 +147,14 @@
 		1D076CAE176F1665ADDFAA6C /* beignes-soeur-berthe-jacqueline-leon.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "beignes-soeur-berthe-jacqueline-leon.jpg"; sourceTree = "<group>"; };
 		1EB2446BAEE79FEC44F8AAA0 /* pouding-au-riz.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "pouding-au-riz.jpg"; sourceTree = "<group>"; };
 		24F53900C665B38947AE1A13 /* biscuits-a-la-farine-d.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "biscuits-a-la-farine-d.jpg"; sourceTree = "<group>"; };
+		26C1D3B4A5E6478190B2C3D3 /* RecipeMigrationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeMigrationCoordinator.swift; sourceTree = "<group>"; };
 		2D198AD2A83EB7E74EAE9947 /* brochettes-thailandaise.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "brochettes-thailandaise.jpg"; sourceTree = "<group>"; };
 		2DB2D1764A5D0E8E0AC11886 /* ImagePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePickerView.swift; sourceTree = "<group>"; };
 		31429291B5EBB096E597C1D7 /* MomRecetteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomRecetteTests.swift; sourceTree = "<group>"; };
 		326FAFD9C16396B5EFA6266B /* faux-filet.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "faux-filet.jpg"; sourceTree = "<group>"; };
+		39D4E5F6A7B84910C1D2E3F3 /* RecipePersistentContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipePersistentContainer.swift; sourceTree = "<group>"; };
+		3A4B5C6D7E8F901234567891 /* RecipeCoreDataImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeCoreDataImporter.swift; sourceTree = "<group>"; };
+		3B5C6D7E8F90123456789013 /* RecipeCoreDataRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeCoreDataRepository.swift; sourceTree = "<group>"; };
 		335C36A9E0C4B180B22B390F /* biscuit-raisins-haches.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "biscuit-raisins-haches.jpg"; sourceTree = "<group>"; };
 		3C8B150EDA05779F098C33AD /* carre-aux-dattes.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "carre-aux-dattes.jpg"; sourceTree = "<group>"; };
 		42F9202DFBF5AA5DC3FEC99C /* RolodexDeckView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RolodexDeckView.swift; sourceTree = "<group>"; };
@@ -357,8 +365,12 @@
 		57DE3880636F97FF3147A761 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				3A4B5C6D7E8F901234567891 /* RecipeCoreDataImporter.swift */,
+				3B5C6D7E8F90123456789013 /* RecipeCoreDataRepository.swift */,
 				1BC939F79D86435A915A70A6 /* RecipeImageGenerator.swift */,
+				26C1D3B4A5E6478190B2C3D3 /* RecipeMigrationCoordinator.swift */,
 				FE826583535948DFB26CC1C9 /* RecipeImagePromptBuilder.swift */,
+				39D4E5F6A7B84910C1D2E3F3 /* RecipePersistentContainer.swift */,
 				565BD8E81CA54C239CD34947 /* RecipeImageStorage.swift */,
 				13A4C538B0D16438F83F1D2A /* RecipeCardImageGenerator.swift */,
 				111BB93EB66689287DE48C04 /* RecipeStore.swift */,
@@ -663,8 +675,12 @@
 				ECC41F624296B99CF3E6BFA0 /* Recipe.swift in Sources */,
 				DEAFED9B8D987BD83DB89233 /* RecipeCardView.swift in Sources */,
 				38A44E21BC6F90027F4D1AE3 /* RecipeCardImageGenerator.swift in Sources */,
+				3A4B5C6D7E8F901234567890 /* RecipeCoreDataImporter.swift in Sources */,
+				3B5C6D7E8F90123456789012 /* RecipeCoreDataRepository.swift in Sources */,
 				0A4B6CE94A4E482BBDC405F1 /* RecipeImageGenerator.swift in Sources */,
+				26C1D3B4A5E6478190B2C3D4 /* RecipeMigrationCoordinator.swift in Sources */,
 				74C6D0CC357C4EACBFA241DA /* RecipeImagePromptBuilder.swift in Sources */,
+				39D4E5F6A7B84910C1D2E3F4 /* RecipePersistentContainer.swift in Sources */,
 				24B8007D77184269AD33A3A5 /* RecipeImageStorage.swift in Sources */,
 				05701350B068E71C225372DA /* RecipeDetailView.swift in Sources */,
 				378E614E85CEC44D4D8A8E0C /* RecipeStore.swift in Sources */,
@@ -865,6 +881,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_ENTITLEMENTS = MomRecette.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = "";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 8GTRA62F55;
 				INFOPLIST_FILE = Info.plist;
@@ -891,6 +909,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_ENTITLEMENTS = MomRecette.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = "";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 8GTRA62F55;
 				INFOPLIST_FILE = Info.plist;

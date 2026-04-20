@@ -106,7 +106,7 @@ struct ContentView: View {
                         Button {
                             showImport = true
                         } label: {
-                            Label("Importer", systemImage: "square.and.arrow.down")
+                            Label("Sync", systemImage: "arrow.triangle.2.circlepath")
                         }
                     } label: {
                         Image(systemName: "plus.circle.fill")
@@ -129,7 +129,7 @@ struct ContentView: View {
                         Button {
                             showImport = true
                         } label: {
-                            Label("Importer", systemImage: "square.and.arrow.down")
+                            Label("Sync", systemImage: "arrow.triangle.2.circlepath")
                         }
 
                         Button {

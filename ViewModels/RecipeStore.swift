@@ -4,8 +4,62 @@ import Combine
 import UIKit
 import EventKit
 
+struct RecipeSyncPackage: Codable {
+    struct StoredFile: Codable {
+        let filename: String
+        let data: Data
+    }
+
+    let formatVersion: Int
+    let exportedAt: Date
+    let sourceDeviceName: String
+    let recipes: [Recipe]
+    let groceryList: GroceryList?
+    let generatedImages: [StoredFile]
+    let livePhotos: [StoredFile]
+
+    static let currentFormatVersion = 1
+
+    static let encoder: JSONEncoder = {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return encoder
+    }()
+
+    static let decoder: JSONDecoder = {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
+    }()
+
+    static func defaultFilename(for _: Date) -> String {
+        "MomRecette-Sync-Latest.json"
+    }
+}
+
 @MainActor
 class RecipeStore: ObservableObject {
+    struct CloudSyncPreparationReport {
+        struct FileLocation {
+            let label: String
+            let url: URL
+            let exists: Bool
+        }
+
+        let activeSyncModeTitle: String
+        let activeCloudKitContainerIdentifier: String?
+        let persistentStoreURL: URL?
+        let recipeCount: Int
+        let favoriteCount: Int
+        let generatedDishPhotoCount: Int
+        let generatedRecipeCardCount: Int
+        let importedLivePhotoCount: Int
+        let unreferencedGeneratedImageCount: Int
+        let localStorageLocations: [FileLocation]
+        let recommendedStrategy: String
+    }
+
     enum RecipeCollection: Hashable, Identifiable {
         case all
         case favorites
@@ -55,6 +109,43 @@ class RecipeStore: ObservableObject {
         var appliedCount: Int { importedCount + replacedCount }
         var issueCount: Int { unmatchedCount + invalidCount + failedCount }
     }
+
+    struct SyncPackageExportResult {
+        let packageURL: URL
+        let recipeCount: Int
+        let generatedImageCount: Int
+        let livePhotoCount: Int
+        let groceryListIncluded: Bool
+    }
+
+    struct SyncPackageExportPayload {
+        let filename: String
+        let data: Data
+        let recipeCount: Int
+        let generatedImageCount: Int
+        let livePhotoCount: Int
+        let groceryListIncluded: Bool
+    }
+
+    struct SyncPackageImportResult {
+        let recipeCount: Int
+        let generatedImageCount: Int
+        let livePhotoCount: Int
+        let groceryListIncluded: Bool
+        let backupURL: URL
+    }
+
+    enum SyncPackageError: LocalizedError {
+        case invalidPackage
+
+        var errorDescription: String? {
+            switch self {
+            case .invalidPackage:
+                return "Ce fichier n'est pas un package MomRecette valide."
+            }
+        }
+    }
+
     enum ReminderExportError: LocalizedError {
         case noActiveGroceryList
         case accessDenied
@@ -94,6 +185,8 @@ class RecipeStore: ObservableObject {
     private let recipeImageStorage: RecipeImageStorage
     private let recipeImagePromptBuilder: RecipeImagePromptBuilder
     private let recipeImageGenerator: any RecipeImageGenerating
+    private let persistentContainer: RecipePersistentContainer?
+    private let coreDataRepository: RecipeCoreDataRepository?
     private var bundledRecipePhotos: [String: Data]
     private var liveRecipePhotos: [String: Data]
     private var livePhotoDirectorySignature: String
@@ -108,7 +201,8 @@ class RecipeStore: ObservableObject {
         enablePhotoAutoRefresh: Bool = true,
         recipeImageStorage: RecipeImageStorage? = nil,
         recipeImagePromptBuilder: RecipeImagePromptBuilder = RecipeImagePromptBuilder(),
-        recipeImageGenerator: (any RecipeImageGenerating)? = nil
+        recipeImageGenerator: (any RecipeImageGenerating)? = nil,
+        persistentContainer: RecipePersistentContainer? = nil
     ) {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         saveURL = recipesURL ?? docs.appendingPathComponent("momrecette.json")
@@ -119,13 +213,27 @@ class RecipeStore: ObservableObject {
         )
         self.recipeImagePromptBuilder = recipeImagePromptBuilder
         self.recipeImageGenerator = recipeImageGenerator ?? OpenAIRecipeImageGenerator(promptBuilder: recipeImagePromptBuilder)
+        self.persistentContainer = persistentContainer
+        if let persistentContainer {
+            self.coreDataRepository = RecipeCoreDataRepository(
+                persistentContainer: persistentContainer,
+                livePhotoDirectoryURL: self.livePhotoDirectoryURL,
+                generatedImageDirectoryURL: self.recipeImageStorage.directoryURL
+            )
+        } else {
+            self.coreDataRepository = nil
+        }
         bundledRecipePhotos = Self.loadBundledRecipePhotos()
         liveRecipePhotos = Self.loadRecipePhotos(from: self.livePhotoDirectoryURL)
         livePhotoDirectorySignature = Self.recipePhotoDirectorySignature(at: self.livePhotoDirectoryURL)
 
+        migrateToPersistentStoreIfNeeded()
         load()
         loadGroceryList()
         hydratePhotosIfAvailable()
+        if shouldLoadSeedData {
+            mergeMissingBundledRecipesIfNeeded()
+        }
 
         if shouldLoadSeedData && recipes.isEmpty {
             loadBundle()
@@ -436,26 +544,227 @@ class RecipeStore: ObservableObject {
         return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
 
-    // MARK: - Persistence
+    var syncBackupDirectoryURL: URL {
+        saveURL
+            .deletingLastPathComponent()
+            .appendingPathComponent("SyncBackups", isDirectory: true)
+    }
 
-    func save() {
+    func exportSyncPackageToTemporaryFile() throws -> SyncPackageExportResult {
+        let payload = try prepareSyncPackageExport()
+        let packageURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+            .appendingPathComponent(payload.filename)
+
+        try FileManager.default.createDirectory(
+            at: packageURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try payload.data.write(to: packageURL, options: .atomic)
+
+        return SyncPackageExportResult(
+            packageURL: packageURL,
+            recipeCount: payload.recipeCount,
+            generatedImageCount: payload.generatedImageCount,
+            livePhotoCount: payload.livePhotoCount,
+            groceryListIncluded: payload.groceryListIncluded
+        )
+    }
+
+    func prepareSyncPackageExport() throws -> SyncPackageExportPayload {
+        let package = try makeSyncPackage()
+        return SyncPackageExportPayload(
+            filename: RecipeSyncPackage.defaultFilename(for: package.exportedAt),
+            data: try RecipeSyncPackage.encoder.encode(package),
+            recipeCount: package.recipes.count,
+            generatedImageCount: package.generatedImages.count,
+            livePhotoCount: package.livePhotos.count,
+            groceryListIncluded: package.groceryList != nil
+        )
+    }
+
+    func importSyncPackage(from data: Data) throws -> SyncPackageImportResult {
+        let package: RecipeSyncPackage
+
         do {
-            let data = try JSONEncoder().encode(recipes)
-            try data.write(to: saveURL, options: .atomicWrite)
+            package = try RecipeSyncPackage.decoder.decode(RecipeSyncPackage.self, from: data)
         } catch {
-            print("RecipeStore save error: \(error)")
+            throw SyncPackageError.invalidPackage
+        }
+
+        let backupURL = try createAutomaticSyncBackup()
+
+        try replaceDirectoryContents(
+            at: recipeImageStorage.directoryURL,
+            with: package.generatedImages
+        )
+        try replaceDirectoryContents(
+            at: livePhotoDirectoryURL,
+            with: package.livePhotos
+        )
+
+        recipes = Self.reconciledRecipes(
+            Self.sanitizedRecipes(package.recipes, source: "sync package")
+        )
+        save()
+
+        if let groceryList = package.groceryList {
+            currentGroceryList = groceryList
+            saveGroceryList()
+        } else {
+            clearGroceryList()
+        }
+
+        livePhotoDirectorySignature = Self.recipePhotoDirectorySignature(at: livePhotoDirectoryURL)
+        liveRecipePhotos = Self.loadRecipePhotos(from: livePhotoDirectoryURL)
+        hydratePhotosIfAvailable()
+
+        return SyncPackageImportResult(
+            recipeCount: package.recipes.count,
+            generatedImageCount: package.generatedImages.count,
+            livePhotoCount: package.livePhotos.count,
+            groceryListIncluded: package.groceryList != nil,
+            backupURL: backupURL
+        )
+    }
+
+    func cloudSyncPreparationReport() -> CloudSyncPreparationReport {
+        let fileManager = FileManager.default
+        let referencedGeneratedImages = Set(
+            recipes.compactMap(\.photoFilename) +
+            recipes.compactMap(\.recipeCardFilename)
+        )
+
+        let generatedImageFiles = (try? fileManager.contentsOfDirectory(
+            at: recipeImageStorage.directoryURL,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        )) ?? []
+
+        let unreferencedGeneratedImageCount = generatedImageFiles.reduce(into: 0) { count, url in
+            guard url.hasDirectoryPath == false else { return }
+            if referencedGeneratedImages.contains(url.lastPathComponent) == false {
+                count += 1
+            }
+        }
+
+        let livePhotoFiles = (try? fileManager.contentsOfDirectory(
+            at: livePhotoDirectoryURL,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        )) ?? []
+
+        return CloudSyncPreparationReport(
+            activeSyncModeTitle: activeSyncModeTitle,
+            activeCloudKitContainerIdentifier: activeCloudKitContainerIdentifier,
+            persistentStoreURL: persistentContainer?.storeURL,
+            recipeCount: recipes.count,
+            favoriteCount: favoriteCount,
+            generatedDishPhotoCount: recipes.compactMap(\.photoFilename).count,
+            generatedRecipeCardCount: recipes.compactMap(\.recipeCardFilename).count,
+            importedLivePhotoCount: livePhotoFiles.filter { !$0.hasDirectoryPath }.count,
+            unreferencedGeneratedImageCount: unreferencedGeneratedImageCount,
+            localStorageLocations: [
+                .init(label: "Recipe JSON", url: saveURL, exists: fileManager.fileExists(atPath: saveURL.path)),
+                .init(label: "Grocery JSON", url: groceryListURL, exists: fileManager.fileExists(atPath: groceryListURL.path)),
+                .init(label: "Generated Images", url: recipeImageStorage.directoryURL, exists: fileManager.fileExists(atPath: recipeImageStorage.directoryURL.path)),
+                .init(label: "Imported Live Photos", url: livePhotoDirectoryURL, exists: fileManager.fileExists(atPath: livePhotoDirectoryURL.path))
+            ],
+            recommendedStrategy: "Core Data + NSPersistentCloudKitContainer"
+        )
+    }
+
+    private var activeSyncModeTitle: String {
+        guard let persistentContainer else {
+            return "JSON local"
+        }
+
+        switch persistentContainer.syncMode {
+        case .localOnly:
+            return "Core Data local"
+        case .cloudKit:
+            return "Core Data + CloudKit"
         }
     }
 
-    func load() {
-        guard FileManager.default.fileExists(atPath: saveURL.path) else { return }
-        do {
-            let data = try Data(contentsOf: saveURL)
-            let decoded = try JSONDecoder().decode([Recipe].self, from: data)
-            recipes = Self.sanitizedRecipes(decoded, source: "saved recipes")
-        } catch {
-            print("RecipeStore load error: \(error)")
+    private var activeCloudKitContainerIdentifier: String? {
+        guard let persistentContainer else { return nil }
+
+        if case .cloudKit(let containerIdentifier) = persistentContainer.syncMode {
+            return containerIdentifier
         }
+
+        return nil
+    }
+
+    func cloudSyncMigrationPlan(
+        persistentStoreURL: URL? = nil
+    ) throws -> RecipeMigrationPlan {
+        let coordinator = try RecipeMigrationCoordinator(
+            documentsDirectoryURL: saveURL.deletingLastPathComponent(),
+            persistentStoreURL: persistentStoreURL
+        )
+        return coordinator.makePlan(using: cloudSyncPreparationReport())
+    }
+
+    func createCloudSyncMigrationBackup(
+        persistentStoreURL: URL? = nil
+    ) throws -> RecipeMigrationBackup {
+        let coordinator = try RecipeMigrationCoordinator(
+            documentsDirectoryURL: saveURL.deletingLastPathComponent(),
+            persistentStoreURL: persistentStoreURL
+        )
+        return try coordinator.createBackup(using: cloudSyncPreparationReport())
+    }
+
+    func importLibraryIntoPersistentStore(
+        _ persistentContainer: RecipePersistentContainer
+    ) throws -> RecipeCoreDataImportReport {
+        let importer = RecipeCoreDataImporter(
+            persistentContainer: persistentContainer,
+            livePhotoDirectoryURL: livePhotoDirectoryURL,
+            generatedImageDirectoryURL: recipeImageStorage.directoryURL
+        )
+
+        return try importer.importLibrary(recipes: recipes)
+    }
+
+    // MARK: - Persistence
+
+    func save() {
+        if let coreDataRepository {
+            do {
+                _ = try coreDataRepository.save(recipes: recipes)
+            } catch {
+                print("RecipeStore Core Data save error: \(error)")
+            }
+            return
+        }
+
+        saveJSONStore()
+    }
+
+    func load() {
+        if let coreDataRepository {
+            do {
+                let loadedRecipes = Self.sanitizedRecipes(
+                    try coreDataRepository.loadRecipes(),
+                    source: "core data store"
+                )
+                let reconciledRecipes = Self.reconciledRecipes(loadedRecipes)
+                recipes = reconciledRecipes
+
+                if reconciledRecipes.count != loadedRecipes.count {
+                    _ = try coreDataRepository.save(recipes: reconciledRecipes)
+                }
+            } catch {
+                print("RecipeStore Core Data load error: \(error)")
+                recipes = []
+            }
+            return
+        }
+
+        loadJSONStore()
     }
 
     private func saveGroceryList() {
@@ -496,17 +805,90 @@ class RecipeStore: ObservableObject {
         }
     }
 
+    private func saveJSONStore() {
+        do {
+            let data = try JSONEncoder().encode(recipes)
+            try data.write(to: saveURL, options: .atomicWrite)
+        } catch {
+            print("RecipeStore save error: \(error)")
+        }
+    }
+
+    private func loadJSONStore() {
+        guard FileManager.default.fileExists(atPath: saveURL.path) else { return }
+        do {
+            let data = try Data(contentsOf: saveURL)
+            let decoded = try JSONDecoder().decode([Recipe].self, from: data)
+            recipes = Self.sanitizedRecipes(decoded, source: "saved recipes")
+        } catch {
+            print("RecipeStore load error: \(error)")
+        }
+    }
+
+    private func migrateToPersistentStoreIfNeeded() {
+        guard let persistentContainer, let coreDataRepository else { return }
+        let migrationDefaultsKey = Self.persistentMigrationDefaultsKey(for: persistentContainer.storeURL)
+
+        do {
+            if UserDefaults.standard.bool(forKey: migrationDefaultsKey) {
+                return
+            }
+
+            guard FileManager.default.fileExists(atPath: saveURL.path) else {
+                if try coreDataRepository.isEmpty() == false {
+                    UserDefaults.standard.set(true, forKey: migrationDefaultsKey)
+                }
+                return
+            }
+
+            loadJSONStore()
+            hydratePhotosIfAvailable()
+            guard recipes.isEmpty == false else {
+                UserDefaults.standard.set(true, forKey: migrationDefaultsKey)
+                return
+            }
+
+            _ = try createCloudSyncMigrationBackup(persistentStoreURL: persistentContainer.storeURL)
+            _ = try coreDataRepository.save(recipes: recipes)
+            UserDefaults.standard.set(true, forKey: migrationDefaultsKey)
+            recipes.removeAll()
+        } catch {
+            print("RecipeStore persistent migration error: \(error)")
+        }
+    }
+
     private func loadBundle() {
+        let bundledRecipes = loadBundledRecipes()
+        guard !bundledRecipes.isEmpty else { return }
+        recipes = Self.sanitizedRecipes(bundledRecipes, source: "bundle seed")
+        hydratePhotosIfAvailable()
+        save()
+        print("RecipeStore: seeded \(recipes.count) recipes from bundle")
+    }
+
+    private func mergeMissingBundledRecipesIfNeeded() {
+        let bundledRecipes = loadBundledRecipes()
+        guard !bundledRecipes.isEmpty else { return }
+        guard !recipes.isEmpty else { return }
+
+        let existingKeys = Set(recipes.map(Self.bundleMergeKey))
+        let missingBundledRecipes = bundledRecipes.filter { !existingKeys.contains(Self.bundleMergeKey(for: $0)) }
+        guard !missingBundledRecipes.isEmpty else { return }
+
+        recipes = Self.sanitizedRecipes(recipes + missingBundledRecipes, source: "bundle merge")
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        hydratePhotosIfAvailable()
+        save()
+        print("RecipeStore: merged \(missingBundledRecipes.count) bundled recipes into saved library")
+    }
+
+    private func loadBundledRecipes() -> [Recipe] {
         guard let url = Bundle.main.url(forResource: "momrecette_bundle", withExtension: "json"),
-              let data = try? Data(contentsOf: url) else { return }
+              let data = try? Data(contentsOf: url) else { return [] }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        if let loaded = try? decoder.decode([LenientRecipe].self, from: data) {
-            recipes = Self.sanitizedRecipes(loaded.map { $0.toRecipe() }, source: "bundle seed")
-            hydratePhotosIfAvailable()
-            save()
-            print("RecipeStore: seeded \(recipes.count) recipes from bundle")
-        }
+        guard let loaded = try? decoder.decode([LenientRecipe].self, from: data) else { return [] }
+        return loaded.map { $0.toRecipe() }
     }
 
     func refreshRecipePhotosIfNeeded(force: Bool = false) {
@@ -558,6 +940,80 @@ class RecipeStore: ObservableObject {
 
         if didChange {
             save()
+        }
+    }
+
+    private func makeSyncPackage() throws -> RecipeSyncPackage {
+        RecipeSyncPackage(
+            formatVersion: RecipeSyncPackage.currentFormatVersion,
+            exportedAt: Date(),
+            sourceDeviceName: UIDevice.current.name,
+            recipes: recipes,
+            groceryList: currentGroceryList,
+            generatedImages: try storedFiles(in: recipeImageStorage.directoryURL),
+            livePhotos: try storedFiles(in: livePhotoDirectoryURL)
+        )
+    }
+
+    private func storedFiles(in directoryURL: URL) throws -> [RecipeSyncPackage.StoredFile] {
+        let fileManager = FileManager.default
+        guard fileManager.fileExists(atPath: directoryURL.path) else { return [] }
+
+        let urls = try fileManager.contentsOfDirectory(
+            at: directoryURL,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        )
+
+        return try urls.compactMap { url in
+            guard url.hasDirectoryPath == false else { return nil }
+            let data = try Data(contentsOf: url)
+            return RecipeSyncPackage.StoredFile(
+                filename: url.lastPathComponent,
+                data: data
+            )
+        }
+    }
+
+    private func createAutomaticSyncBackup() throws -> URL {
+        let backupDirectoryURL = syncBackupDirectoryURL
+        try FileManager.default.createDirectory(at: backupDirectoryURL, withIntermediateDirectories: true)
+
+        let package = try makeSyncPackage()
+        let backupURL = backupDirectoryURL.appendingPathComponent(
+            "MomRecette-Backup-\(UUID().uuidString)-\(RecipeSyncPackage.defaultFilename(for: package.exportedAt))"
+        )
+        try RecipeSyncPackage.encoder.encode(package).write(to: backupURL, options: .atomic)
+        return backupURL
+    }
+
+    private func replaceDirectoryContents(
+        at directoryURL: URL,
+        with files: [RecipeSyncPackage.StoredFile]
+    ) throws {
+        let fileManager = FileManager.default
+        let parentDirectoryURL = directoryURL.deletingLastPathComponent()
+        let stagingDirectoryURL = parentDirectoryURL
+            .appendingPathComponent(".\(directoryURL.lastPathComponent)-staging-\(UUID().uuidString)", isDirectory: true)
+
+        try fileManager.createDirectory(at: stagingDirectoryURL, withIntermediateDirectories: true)
+
+        do {
+            for file in files {
+                let sanitizedFilename = URL(fileURLWithPath: file.filename).lastPathComponent
+                guard !sanitizedFilename.isEmpty else { continue }
+                let destinationURL = stagingDirectoryURL.appendingPathComponent(sanitizedFilename)
+                try file.data.write(to: destinationURL, options: .atomic)
+            }
+
+            if fileManager.fileExists(atPath: directoryURL.path) {
+                try fileManager.removeItem(at: directoryURL)
+            }
+
+            try fileManager.moveItem(at: stagingDirectoryURL, to: directoryURL)
+        } catch {
+            try? fileManager.removeItem(at: stagingDirectoryURL)
+            throw error
         }
     }
 
@@ -722,6 +1178,84 @@ class RecipeStore: ObservableObject {
         recipes.map { sanitizedRecipe($0, source: source) }
     }
 
+    private static func reconciledRecipes(_ recipes: [Recipe]) -> [Recipe] {
+        var recipesByKey: [String: Recipe] = [:]
+
+        for recipe in recipes {
+            let key = bundleMergeKey(for: recipe)
+            guard let existing = recipesByKey[key] else {
+                recipesByKey[key] = recipe
+                continue
+            }
+
+            recipesByKey[key] = mergedRecipe(existing, recipe)
+        }
+
+        return recipesByKey.values.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    private static func bundleMergeKey(for recipe: Recipe) -> String {
+        "\(recipe.category.rawValue.foldedForMatching)|\(recipe.name.foldedForMatching)"
+    }
+
+    private static func mergedRecipe(_ lhs: Recipe, _ rhs: Recipe) -> Recipe {
+        let primary: Recipe
+        let secondary: Recipe
+
+        if recipeQualityScore(lhs) >= recipeQualityScore(rhs) {
+            primary = lhs
+            secondary = rhs
+        } else {
+            primary = rhs
+            secondary = lhs
+        }
+
+        var merged = primary
+        merged.servings = max(primary.servings, secondary.servings)
+        merged.caloriesPerServing = primary.caloriesPerServing ?? secondary.caloriesPerServing
+        merged.prepTime = max(primary.prepTime, secondary.prepTime)
+        merged.cookTime = max(primary.cookTime, secondary.cookTime)
+        merged.ingredients = richer(primary.ingredients, secondary.ingredients)
+        merged.steps = richer(primary.steps, secondary.steps)
+        merged.notes = richer(primary.notes, secondary.notes)
+        merged.isFavorite = primary.isFavorite || secondary.isFavorite
+        merged.photoFilename = primary.photoFilename ?? secondary.photoFilename
+        merged.generatedImagePrompt = merged.photoFilename == primary.photoFilename
+            ? primary.generatedImagePrompt ?? secondary.generatedImagePrompt
+            : secondary.generatedImagePrompt ?? primary.generatedImagePrompt
+        merged.generatedImageMode = merged.photoFilename == primary.photoFilename
+            ? primary.generatedImageMode ?? secondary.generatedImageMode
+            : secondary.generatedImageMode ?? primary.generatedImageMode
+        merged.imageData = primary.imageData ?? secondary.imageData
+        merged.recipeCardFilename = primary.recipeCardFilename ?? secondary.recipeCardFilename
+        merged.generatedRecipeCardPrompt = merged.recipeCardFilename == primary.recipeCardFilename
+            ? primary.generatedRecipeCardPrompt ?? secondary.generatedRecipeCardPrompt
+            : secondary.generatedRecipeCardPrompt ?? primary.generatedRecipeCardPrompt
+        merged.createdAt = min(primary.createdAt, secondary.createdAt)
+        return merged
+    }
+
+    private static func recipeQualityScore(_ recipe: Recipe) -> Int {
+        var score = 0
+        score += recipe.ingredients.count * 4
+        score += recipe.steps.count * 4
+        score += recipe.notes.isEmpty ? 0 : min(recipe.notes.count, 40)
+        score += recipe.imageData == nil ? 0 : 25
+        score += recipe.photoFilename == nil ? 0 : 20
+        score += recipe.recipeCardFilename == nil ? 0 : 16
+        score += recipe.isFavorite ? 12 : 0
+        score += recipe.caloriesPerServing == nil ? 0 : 4
+        return score
+    }
+
+    private static func richer<T>(_ lhs: [T], _ rhs: [T]) -> [T] {
+        lhs.count >= rhs.count ? lhs : rhs
+    }
+
+    private static func richer(_ lhs: String, _ rhs: String) -> String {
+        lhs.count >= rhs.count ? lhs : rhs
+    }
+
     private static func sanitizedRecipe(_ recipe: Recipe, source: String) -> Recipe {
         var sanitized = recipe
 
@@ -755,6 +1289,10 @@ class RecipeStore: ObservableObject {
             return nil
         }
         return data
+    }
+
+    private static func persistentMigrationDefaultsKey(for storeURL: URL) -> String {
+        "MomRecette.PersistentStore.LegacyMigration.\(storeURL.path.replacingOccurrences(of: "/", with: "_"))"
     }
 
     private static let supportedRecipePhotoExtensions = ["jpg", "jpeg", "png", "webp"]
