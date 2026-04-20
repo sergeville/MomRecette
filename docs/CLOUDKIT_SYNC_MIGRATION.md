@@ -1,5 +1,21 @@
 # MomRecette Cloud Sync Migration
 
+## Current Status
+
+Current shipped state on `upgrade/1.0.5`:
+
+- local Core Data foundation exists
+- JSON/image migration scaffolding exists
+- CloudKit-ready container scaffolding exists
+- free manual package transfer exists as the current operator-facing sync path
+
+Until Apple Developer / CloudKit provisioning is available, the practical cross-device workflow is:
+
+- export `MomRecette-Sync-Latest.json`
+- import that package on the other device
+
+So this document remains the target architecture contract, not the current live operator workflow.
+
 ## Goal
 
 Move MomRecette from per-device local JSON storage to a local-first store that stays synchronized across iPhone, iPad, and Mac Catalyst without data loss.

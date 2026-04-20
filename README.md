@@ -10,7 +10,8 @@ Application iOS / iPadOS / macOS pour conserver et consulter les recettes de fam
 - **Filtres** — par catégorie et par recherche (nom, catégorie, ingrédients)
 - **Ajout / modification** — formulaire complet avec galerie photo et caméra
 - **Import JSON** — importer un fichier de recettes au format JSON
-- **Persistance locale** — `momrecette.json` dans le dossier Documents de l'app
+- **Sync manuel gratuit** — exporter / importer un package complet entre iPhone, iPad et Mac
+- **Persistance locale** — Core Data local avec migration de l'ancien `momrecette.json`
 - **Liste d'épicerie** — générer une liste à cocher depuis une recette et la sauvegarder localement
 
 ## Catégories
@@ -38,7 +39,11 @@ MomRecette/                           Racine du projet
 │   └── Recipe.swift                  Modèle Recipe + Ingredient + Category + données d'exemple
 │   └── GroceryList.swift             Modèle de liste d'épicerie générée depuis une recette
 ├── ViewModels/
-│   └── RecipeStore.swift             Store ObservableObject — CRUD + persistence JSON + filtrage + liste d'épicerie
+│   └── RecipeStore.swift             Store ObservableObject — CRUD + persistance locale + sync package + liste d'épicerie
+│   └── RecipePersistentContainer.swift  Stack Core Data locale / CloudKit-ready
+│   └── RecipeCoreDataRepository.swift   Repository Core Data
+│   └── RecipeMigrationCoordinator.swift Migration / sauvegardes
+│   └── RecipeCoreDataImporter.swift     Import JSON/images vers Core Data
 ├── Views/
 │   ├── ContentView.swift             Racine — bascule Rolodex (iPhone) ↔ SplitView (iPad/Mac)
 │   ├── AddEdit/
@@ -53,7 +58,7 @@ MomRecette/                           Racine du projet
 │   │   └── GroceryListView.swift     Liste d'épicerie à cocher générée depuis une recette
 │   └── Components/
 │       ├── ImagePickerView.swift     Sélecteur photo (galerie + caméra)
-│       └── ImportView.swift          Import JSON
+│       └── ImportView.swift          Surface Sync / import / export
 ├── Resources/
 │   └── momrecette_bundle.json        Recettes de départ (seed)
 │   └── RecipePhotos/                 Pack optionnel de photos de plats liées automatiquement
@@ -166,9 +171,54 @@ Les catégories valides : `Soupes`, `Entrées`, `Plats`, `Desserts`, `Sauces`, `
 
 ## Persistance
 
-Au premier lancement, les recettes du fichier bundle `momrecette_bundle.json` sont chargées.
-Toutes les modifications sont sauvegardées automatiquement dans `Documents/momrecette.json`.
-La liste d'épicerie active est sauvegardée dans `Documents/momrecette-grocery-list.json`.
+Au premier lancement, MomRecette peut migrer la bibliothèque locale historique vers un magasin Core Data local.
+
+Entrées historiques encore prises en charge comme source de migration:
+
+- `Documents/momrecette.json`
+- `Documents/momrecette-grocery-list.json`
+- `Documents/RecipePhotos/`
+- `Documents/RecipeImages/`
+
+Après migration, la source active devient le magasin Core Data local:
+
+- `Library/Application Support/MomRecette/RecipeStore.sqlite`
+
+La liste d'épicerie, les photos live, les photos générées et les recipe cards restent préservées pendant cette migration locale.
+
+## Sync manuel gratuit
+
+Sans abonnement Apple Developer, MomRecette peut maintenant transférer la bibliothèque complète entre appareils via un package manuel.
+
+La surface visible dans l'app s'appelle maintenant `Sync`.
+
+Le package contient:
+
+- recettes
+- liste d'épicerie active
+- photos live `RecipePhotos`
+- images générées `RecipeImages`
+
+Flux recommandé:
+
+1. sur l'appareil source, ouvrez `Sync`
+2. utilisez `Exporter un package de sync`
+3. enregistrez le fichier
+4. sur l'appareil cible, ouvrez `Sync`
+5. utilisez `Importer un package MomRecette`
+6. confirmez le remplacement de la bibliothèque locale
+
+Le nom de fichier stable utilisé par défaut est:
+
+- `MomRecette-Sync-Latest.json`
+
+L'import crée automatiquement une sauvegarde locale avant remplacement.
+
+Limites actuelles:
+
+- ce n'est pas un sync temps réel
+- chaque nouvel export doit être réimporté sur l'autre appareil
+- l'import remplace la bibliothèque locale de l'appareil cible après sauvegarde automatique
 
 ## Pack de photos des recettes
 
