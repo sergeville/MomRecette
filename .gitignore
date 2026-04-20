@@ -25,6 +25,7 @@ __pycache__/
 # Local workspace scratch area
 local/
 b.txt
+question.txt
 _bmad/
 _bmad-output/
 
