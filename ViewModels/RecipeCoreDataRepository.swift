@@ -83,7 +83,9 @@ struct RecipeCoreDataRepository {
             generatedRecipeCardPrompt: object.value(forKey: "generatedRecipeCardPrompt") as? String,
             isFavorite: object.value(forKey: "isFavorite") as? Bool ?? false,
             notes: object.value(forKey: "notes") as? String ?? "",
-            createdAt: object.value(forKey: "createdAt") as? Date ?? Date()
+            createdAt: object.value(forKey: "createdAt") as? Date ?? Date(),
+            updatedAt: object.value(forKey: "updatedAt") as? Date ?? Date(),
+            lastModifiedByDeviceID: object.value(forKey: "lastModifiedByDeviceID") as? String
         )
 
         if recipe.photoFilename == nil,

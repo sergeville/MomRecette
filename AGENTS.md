@@ -75,6 +75,8 @@ Use this order by default:
 - avoid premature coding when a story, epic, or decision artifact is the real missing step
 - make progress without waiting unless a decision is truly blocking
 
+Ask me clarifying questions until you are 95% confident you can complete the task successfully.
+
 ## Output style
 
 Use this structure unless asked otherwise:

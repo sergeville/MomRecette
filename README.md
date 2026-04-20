@@ -192,6 +192,17 @@ Sans abonnement Apple Developer, MomRecette peut maintenant transférer la bibli
 
 La surface visible dans l'app s'appelle maintenant `Sync`.
 
+Chemins recommandés sans abonnement:
+
+- sur simulateur iPhone/iPad du même Mac:
+  - privilégiez `SharedSync`
+  - la surface `Sync` montre une seule action principale selon l'état de l'appareil
+  - les actions de récupération et de reconfiguration restent disponibles dans `Options avancees SharedSync`
+- entre appareils physiques ou quand vous voulez un transfert explicite:
+  - utilisez le package manuel
+  - `Exporter un package de sync` sur l'appareil source
+  - `Importer un package MomRecette` sur l'appareil cible
+
 Le package contient:
 
 - recettes
@@ -219,6 +230,26 @@ Limites actuelles:
 - ce n'est pas un sync temps réel
 - chaque nouvel export doit être réimporté sur l'autre appareil
 - l'import remplace la bibliothèque locale de l'appareil cible après sauvegarde automatique
+
+## SharedSync sur simulateur
+
+Pour les tests iPhone/iPad sur simulateur, MomRecette utilise par défaut un dossier visible sur le Mac au lieu de dépendre des chemins cachés de chaque conteneur CoreSimulator:
+
+- `~/Documents/MomRecette-Simulator/SharedSync/`
+
+Ce dossier devient le point commun pour:
+
+- `MomRecette-Sync-Queue.json`
+- `MomRecette-Latest-Backup.json`
+- `Backups/`
+
+Les vrais appareils continuent d'utiliser le dossier iCloud canonique.
+
+Si vous voulez remplacer le chemin par défaut sur simulateur, définissez:
+
+- `MOMRECETTE_SHARED_SYNC_ROOT=/chemin/visible`
+
+MomRecette ajoutera ensuite automatiquement `SharedSync/` sous cette racine.
 
 ## Pack de photos des recettes
 

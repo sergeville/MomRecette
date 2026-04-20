@@ -26,6 +26,8 @@ struct GroceryList: Codable, Equatable {
     var recipeID: UUID
     var recipeName: String
     var createdAt: Date = Date()
+    var updatedAt: Date = Date()
+    var lastModifiedByDeviceID: String?
     var items: [Item]
 
     struct Item: Identifiable, Codable, Equatable {

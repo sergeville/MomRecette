@@ -25,6 +25,8 @@ __pycache__/
 # Local workspace scratch area
 local/
 b.txt
+_bmad/
+_bmad-output/
 
 # Companion recipe-card CLI local artifacts
 recipe_card_ai_cli/

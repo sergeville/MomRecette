@@ -13,6 +13,7 @@ struct RecipeSyncPackage: Codable {
     let formatVersion: Int
     let exportedAt: Date
     let sourceDeviceName: String
+    let sharedQueueSequence: Int?
     let recipes: [Recipe]
     let groceryList: GroceryList?
     let generatedImages: [StoredFile]
@@ -38,8 +39,178 @@ struct RecipeSyncPackage: Codable {
     }
 }
 
+struct RecipeSyncQueue: Codable {
+    struct Operation: Codable, Identifiable {
+        enum Kind: String, Codable {
+            case upsertRecipe
+            case deleteRecipe
+            case replaceGroceryList
+            case clearGroceryList
+        }
+
+        let id: UUID
+        var sequence: Int?
+        let createdAt: Date
+        let sourceDeviceID: String
+        let sourceDeviceName: String
+        let kind: Kind
+        let recipe: Recipe?
+        let recipeID: UUID?
+        let groceryList: GroceryList?
+        let generatedImages: [RecipeSyncPackage.StoredFile]
+        let livePhotos: [RecipeSyncPackage.StoredFile]
+
+        init(
+            id: UUID = UUID(),
+            sequence: Int? = nil,
+            createdAt: Date = Date(),
+            sourceDeviceID: String,
+            sourceDeviceName: String,
+            kind: Kind,
+            recipe: Recipe? = nil,
+            recipeID: UUID? = nil,
+            groceryList: GroceryList? = nil,
+            generatedImages: [RecipeSyncPackage.StoredFile] = [],
+            livePhotos: [RecipeSyncPackage.StoredFile] = []
+        ) {
+            self.id = id
+            self.sequence = sequence
+            self.createdAt = createdAt
+            self.sourceDeviceID = sourceDeviceID
+            self.sourceDeviceName = sourceDeviceName
+            self.kind = kind
+            self.recipe = recipe
+            self.recipeID = recipeID
+            self.groceryList = groceryList
+            self.generatedImages = generatedImages
+            self.livePhotos = livePhotos
+        }
+    }
+
+    let formatVersion: Int
+    var lastSequence: Int
+    var operations: [Operation]
+
+    static let currentFormatVersion = 1
+    static let defaultFilename = "MomRecette-Sync-Queue.json"
+}
+
+private struct RecipeSyncLocalState: Codable {
+    let formatVersion: Int
+    var lastAppliedQueueSequence: Int
+    var hasResolvedQueueCheckpoint: Bool
+    var lastSynchronizedAt: Date?
+    var rememberedQueueBookmark: Data?
+    var rememberedQueuePath: String?
+    var pendingOperations: [RecipeSyncQueue.Operation]
+
+    init(
+        formatVersion: Int = 1,
+        lastAppliedQueueSequence: Int = 0,
+        hasResolvedQueueCheckpoint: Bool = false,
+        lastSynchronizedAt: Date? = nil,
+        rememberedQueueBookmark: Data? = nil,
+        rememberedQueuePath: String? = nil,
+        pendingOperations: [RecipeSyncQueue.Operation] = []
+    ) {
+        self.formatVersion = formatVersion
+        self.lastAppliedQueueSequence = lastAppliedQueueSequence
+        self.hasResolvedQueueCheckpoint = hasResolvedQueueCheckpoint
+        self.lastSynchronizedAt = lastSynchronizedAt
+        self.rememberedQueueBookmark = rememberedQueueBookmark
+        self.rememberedQueuePath = rememberedQueuePath
+        self.pendingOperations = pendingOperations
+    }
+}
+
 @MainActor
 class RecipeStore: ObservableObject {
+    private struct SharedSyncLocations {
+        let directoryURL: URL
+        let queueURL: URL
+        let latestBackupURL: URL
+        let archivedBackupsDirectoryURL: URL
+    }
+
+    private struct PreservedBootstrapRecipe {
+        let recipe: Recipe
+        let generatedImages: [RecipeSyncPackage.StoredFile]
+        let livePhotos: [RecipeSyncPackage.StoredFile]
+    }
+
+    struct SyncStartupNotice: Identifiable {
+        let id = UUID()
+        let title: String
+        let message: String
+    }
+
+    struct SharedSyncQueueStatus {
+        let rememberedQueuePath: String?
+        let lastAppliedQueueSequence: Int
+        let hasResolvedCheckpoint: Bool
+        let lastSynchronizedAt: Date?
+        let pendingOperationCount: Int
+    }
+
+    struct SharedSyncBootstrapStatus {
+        let canonicalSharedSyncPath: String?
+        let canonicalQueuePath: String?
+        let latestBackupPath: String?
+        let iCloudAvailable: Bool
+        let usesLocalOverride: Bool
+        let hasLocalLibraryData: Bool
+        let latestBackupExists: Bool
+        let requiresBootstrap: Bool
+        let canRestoreFromLatestBackup: Bool
+        let isAwaitingInitialSharedBackup: Bool
+    }
+
+    struct SharedSyncQueueBootstrapPayload {
+        let filename: String
+        let data: Data
+    }
+
+    struct SharedSyncQueueSyncResult {
+        let queueURL: URL
+        let pulledOperationCount: Int
+        let pushedOperationCount: Int
+        let lastAppliedQueueSequence: Int
+        let createdQueue: Bool
+        let compactedOperationCount: Int
+        let retainedOperationCount: Int
+    }
+
+    struct SharedSyncBootstrapResult {
+        let latestBackupURL: URL
+        let localBackupURL: URL
+        let restoredRecipeCount: Int
+        let mergedLocalRecipeCount: Int
+        let queueSyncResult: SharedSyncQueueSyncResult
+    }
+
+    enum SharedSyncQueueError: LocalizedError {
+        case noRememberedQueue
+        case invalidQueue
+        case iCloudSharedSyncUnavailable
+        case missingSharedBackup
+        case invalidSharedBackup
+
+        var errorDescription: String? {
+            switch self {
+            case .noRememberedQueue:
+                return "Aucune queue partagee memorisee pour cet appareil."
+            case .invalidQueue:
+                return "Le fichier de queue partagee est invalide."
+            case .iCloudSharedSyncUnavailable:
+                return "Le dossier SharedSync iCloud n'est pas disponible sur cet appareil."
+            case .missingSharedBackup:
+                return "Aucune sauvegarde partagee recente n'est disponible dans SharedSync."
+            case .invalidSharedBackup:
+                return "La sauvegarde partagee la plus recente est invalide."
+            }
+        }
+    }
+
     struct CloudSyncPreparationReport {
         struct FileLocation {
             let label: String
@@ -178,6 +349,7 @@ class RecipeStore: ObservableObject {
     @Published var currentGroceryList: GroceryList?
     @Published var searchText: String = ""
     @Published var selectedCollection: RecipeCollection = .all
+    @Published var syncStartupNotice: SyncStartupNotice?
 
     private let saveURL: URL
     private let groceryListURL: URL
@@ -187,11 +359,22 @@ class RecipeStore: ObservableObject {
     private let recipeImageGenerator: any RecipeImageGenerating
     private let persistentContainer: RecipePersistentContainer?
     private let coreDataRepository: RecipeCoreDataRepository?
+    private let deviceIdentifier: String
+    private let deviceName: String
+    private let syncStateURL: URL
+    private let sharedSyncRootOverrideURL: URL?
     private var bundledRecipePhotos: [String: Data]
     private var liveRecipePhotos: [String: Data]
     private var livePhotoDirectorySignature: String
     private var photoRefreshTimer: Timer?
+    private var syncLocalState: RecipeSyncLocalState
+    private var lastAutomaticSharedQueueSyncAttemptAt: Date?
     private let remindersStore = EKEventStore()
+    private let automaticSharedQueueSyncMinimumInterval: TimeInterval = 180
+    private static let sharedSyncDirectoryName = "SharedSync"
+    private static let sharedSyncLatestBackupFilename = "MomRecette-Latest-Backup.json"
+    private static let sharedSyncArchivedBackupsDirectoryName = "Backups"
+    private static let sharedSyncArchivedBackupRetentionCount = 20
 
     init(
         recipesURL: URL? = nil,
@@ -202,7 +385,10 @@ class RecipeStore: ObservableObject {
         recipeImageStorage: RecipeImageStorage? = nil,
         recipeImagePromptBuilder: RecipeImagePromptBuilder = RecipeImagePromptBuilder(),
         recipeImageGenerator: (any RecipeImageGenerating)? = nil,
-        persistentContainer: RecipePersistentContainer? = nil
+        persistentContainer: RecipePersistentContainer? = nil,
+        deviceIdentifier: String? = nil,
+        deviceName: String? = nil,
+        sharedSyncRootURL: URL? = nil
     ) {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         saveURL = recipesURL ?? docs.appendingPathComponent("momrecette.json")
@@ -214,6 +400,14 @@ class RecipeStore: ObservableObject {
         self.recipeImagePromptBuilder = recipeImagePromptBuilder
         self.recipeImageGenerator = recipeImageGenerator ?? OpenAIRecipeImageGenerator(promptBuilder: recipeImagePromptBuilder)
         self.persistentContainer = persistentContainer
+        self.deviceIdentifier = deviceIdentifier ?? persistentContainer?.deviceIdentifier ?? RecipePersistentContainer.resolveDeviceIdentifier()
+        self.deviceName = deviceName ?? UIDevice.current.name
+        self.syncStateURL = self.saveURL.deletingLastPathComponent().appendingPathComponent("momrecette-sync-state.json")
+        self.syncLocalState = Self.loadSyncLocalState(from: self.syncStateURL)
+        if self.syncLocalState.lastAppliedQueueSequence > 0 {
+            self.syncLocalState.hasResolvedQueueCheckpoint = true
+        }
+        self.sharedSyncRootOverrideURL = sharedSyncRootURL
         if let persistentContainer {
             self.coreDataRepository = RecipeCoreDataRepository(
                 persistentContainer: persistentContainer,
@@ -294,17 +488,262 @@ class RecipeStore: ObservableObject {
             .map { $0 }
     }
 
+    var sharedSyncQueueStatus: SharedSyncQueueStatus {
+        SharedSyncQueueStatus(
+            rememberedQueuePath: syncLocalState.rememberedQueuePath,
+            lastAppliedQueueSequence: syncLocalState.lastAppliedQueueSequence,
+            hasResolvedCheckpoint: syncLocalState.hasResolvedQueueCheckpoint,
+            lastSynchronizedAt: syncLocalState.lastSynchronizedAt,
+            pendingOperationCount: syncLocalState.pendingOperations.count
+        )
+    }
+
+    var sharedSyncBootstrapStatus: SharedSyncBootstrapStatus {
+        let locations = canonicalSharedSyncLocations()
+        let latestBackupExists = locations.map { FileManager.default.fileExists(atPath: $0.latestBackupURL.path) } ?? false
+        let hasLocalLibraryData = recipes.isEmpty == false || currentGroceryList != nil
+        let requiresBootstrap = syncLocalState.hasResolvedQueueCheckpoint == false && (hasRememberedSharedQueue || latestBackupExists)
+        return SharedSyncBootstrapStatus(
+            canonicalSharedSyncPath: locations?.directoryURL.path,
+            canonicalQueuePath: locations?.queueURL.path,
+            latestBackupPath: locations?.latestBackupURL.path,
+            iCloudAvailable: locations != nil,
+            usesLocalOverride: sharedSyncRootOverrideURL != nil,
+            hasLocalLibraryData: hasLocalLibraryData,
+            latestBackupExists: latestBackupExists,
+            requiresBootstrap: requiresBootstrap,
+            canRestoreFromLatestBackup: syncLocalState.hasResolvedQueueCheckpoint == false && latestBackupExists,
+            isAwaitingInitialSharedBackup: requiresBootstrap && latestBackupExists == false
+        )
+    }
+
+    func performAutomaticSharedQueueSyncIfNeeded(force: Bool = false) {
+        let now = Date()
+        if force == false,
+           let lastAttempt = lastAutomaticSharedQueueSyncAttemptAt,
+           now.timeIntervalSince(lastAttempt) < automaticSharedQueueSyncMinimumInterval {
+            return
+        }
+        lastAutomaticSharedQueueSyncAttemptAt = now
+
+        autoConfigureCanonicalSharedSyncQueueIfPossible()
+
+        guard hasRememberedSharedQueue else {
+            if canonicalSharedSyncLocations() == nil {
+                syncStartupNotice = SyncStartupNotice(
+                    title: "Sync iCloud indisponible",
+                    message: "Le dossier SharedSync iCloud n'est pas accessible pour l'instant. Verifiez iCloud Drive puis reouvrez MomRecette."
+                )
+            } else {
+                syncStartupNotice = SyncStartupNotice(
+                    title: "Sync non configure",
+                    message: "Cet appareil ne connait pas encore la queue partagee. Ouvrez Sync et activez la queue iCloud ou choisissez une queue valide."
+                )
+            }
+            return
+        }
+
+        guard syncLocalState.hasResolvedQueueCheckpoint else {
+            let bootstrapStatus = sharedSyncBootstrapStatus
+            syncStartupNotice = SyncStartupNotice(
+                title: "Sync en attente",
+                message: startupNoticeMessage(for: bootstrapStatus)
+            )
+            return
+        }
+
+        do {
+            _ = try synchronizeWithRememberedSharedQueue()
+        } catch SharedSyncQueueError.noRememberedQueue {
+            syncStartupNotice = SyncStartupNotice(
+                title: "Sync non configure",
+                message: "La queue partagee memorisee n'est plus disponible. Ouvrez Sync et choisissez-la de nouveau."
+            )
+        } catch SharedSyncQueueError.invalidQueue {
+            syncStartupNotice = SyncStartupNotice(
+                title: "Queue partagee invalide",
+                message: "Le fichier de sync memorise ne peut pas etre lu. Ouvrez Sync et choisissez une queue valide."
+            )
+        } catch SharedSyncQueueError.iCloudSharedSyncUnavailable {
+            syncStartupNotice = SyncStartupNotice(
+                title: "Sync iCloud indisponible",
+                message: "Le dossier SharedSync iCloud n'est pas accessible pour l'instant. Reessayez quand iCloud Drive sera revenu."
+            )
+        } catch {
+            syncStartupNotice = SyncStartupNotice(
+                title: "Sync interrompu",
+                message: error.localizedDescription
+            )
+        }
+    }
+
+    func createOrRememberCanonicalSharedQueue() throws -> URL {
+        guard let locations = canonicalSharedSyncLocations() else {
+            throw SharedSyncQueueError.iCloudSharedSyncUnavailable
+        }
+
+        try FileManager.default.createDirectory(at: locations.archivedBackupsDirectoryURL, withIntermediateDirectories: true)
+        let hadLatestBackup = FileManager.default.fileExists(atPath: locations.latestBackupURL.path)
+
+        if FileManager.default.fileExists(atPath: locations.queueURL.path) == false {
+            let queue = RecipeSyncQueue(
+                formatVersion: RecipeSyncQueue.currentFormatVersion,
+                lastSequence: 0,
+                operations: []
+            )
+            try saveSharedSyncQueue(queue, to: locations.queueURL)
+        }
+
+        try rememberSharedSyncQueue(at: locations.queueURL)
+
+        if hadLatestBackup == false, recipes.isEmpty == false || currentGroceryList != nil {
+            try writeLatestSharedSyncBackup(sharedQueueSequence: syncLocalState.lastAppliedQueueSequence)
+            syncLocalState.hasResolvedQueueCheckpoint = true
+            saveSyncLocalState()
+        }
+
+        return locations.queueURL
+    }
+
+    func bootstrapFromLatestSharedBackup() throws -> SharedSyncBootstrapResult {
+        guard let locations = canonicalSharedSyncLocations() else {
+            throw SharedSyncQueueError.iCloudSharedSyncUnavailable
+        }
+
+        guard FileManager.default.fileExists(atPath: locations.latestBackupURL.path) else {
+            throw SharedSyncQueueError.missingSharedBackup
+        }
+
+        let data = try Data(contentsOf: locations.latestBackupURL)
+        let package: RecipeSyncPackage
+        do {
+            package = try RecipeSyncPackage.decoder.decode(RecipeSyncPackage.self, from: data)
+        } catch {
+            throw SharedSyncQueueError.invalidSharedBackup
+        }
+
+        let sharedRecipeIDs = Set(package.recipes.map(\.id))
+        let preservedLocalRecipes = preserveLocalBootstrapRecipes(excludingRecipeIDs: sharedRecipeIDs)
+        let localBackupURL = try createAutomaticSyncBackup()
+
+        _ = try applySyncPackage(package, createAutomaticBackup: false)
+        try rememberSharedSyncQueue(at: locations.queueURL)
+
+        syncLocalState.lastAppliedQueueSequence = package.sharedQueueSequence ?? 0
+        syncLocalState.hasResolvedQueueCheckpoint = true
+        syncLocalState.lastSynchronizedAt = nil
+        syncLocalState.pendingOperations.removeAll()
+        saveSyncLocalState()
+
+        var mergedLocalRecipeCount = 0
+        for preservedRecipe in preservedLocalRecipes {
+            try writeStoredFiles(preservedRecipe.generatedImages, into: recipeImageStorage.directoryURL)
+            try writeStoredFiles(preservedRecipe.livePhotos, into: livePhotoDirectoryURL)
+            add(preservedRecipe.recipe)
+            mergedLocalRecipeCount += 1
+        }
+
+        let queueSyncResult = try synchronizeWithRememberedSharedQueue()
+        syncStartupNotice = nil
+
+        return SharedSyncBootstrapResult(
+            latestBackupURL: locations.latestBackupURL,
+            localBackupURL: localBackupURL,
+            restoredRecipeCount: package.recipes.count,
+            mergedLocalRecipeCount: mergedLocalRecipeCount,
+            queueSyncResult: queueSyncResult
+        )
+    }
+
+    func prepareSharedSyncQueueBootstrapPayload() throws -> SharedSyncQueueBootstrapPayload {
+        let queue = RecipeSyncQueue(
+            formatVersion: RecipeSyncQueue.currentFormatVersion,
+            lastSequence: 0,
+            operations: []
+        )
+        return SharedSyncQueueBootstrapPayload(
+            filename: RecipeSyncQueue.defaultFilename,
+            data: try RecipeSyncPackage.encoder.encode(queue)
+        )
+    }
+
+    func rememberSharedSyncQueue(at url: URL) throws {
+        let bookmark = try? url.bookmarkData(
+            options: [],
+            includingResourceValuesForKeys: nil,
+            relativeTo: nil
+        )
+        syncLocalState.rememberedQueueBookmark = bookmark
+        syncLocalState.rememberedQueuePath = url.path
+        saveSyncLocalState()
+    }
+
+    func synchronizeWithRememberedSharedQueue() throws -> SharedSyncQueueSyncResult {
+        guard hasRememberedSharedQueue else {
+            throw SharedSyncQueueError.noRememberedQueue
+        }
+
+        return try withRememberedSharedQueueURL { queueURL in
+            let loadResult = try loadSharedSyncQueue(from: queueURL)
+            var queue = loadResult.queue
+            let remoteOperations = queue.operations.filter {
+                ($0.sequence ?? 0) > syncLocalState.lastAppliedQueueSequence &&
+                $0.sourceDeviceID != deviceIdentifier
+            }
+
+            let pulledOperationCount = try applyRemoteSharedSyncOperations(remoteOperations)
+            var pushedOperationCount = 0
+
+            for var operation in syncLocalState.pendingOperations {
+                queue.lastSequence += 1
+                operation.sequence = queue.lastSequence
+                queue.operations.append(operation)
+                pushedOperationCount += 1
+            }
+
+            let compactionResult = compactSharedSyncQueue(queue)
+            queue = compactionResult.queue
+
+            try saveSharedSyncQueue(queue, to: queueURL)
+
+            syncLocalState.pendingOperations.removeAll()
+            syncLocalState.lastAppliedQueueSequence = queue.lastSequence
+            syncLocalState.hasResolvedQueueCheckpoint = true
+            syncLocalState.lastSynchronizedAt = Date()
+            syncLocalState.rememberedQueuePath = queueURL.path
+            saveSyncLocalState()
+
+            if loadResult.createdQueue || pulledOperationCount > 0 || pushedOperationCount > 0 {
+                try? writeLatestSharedSyncBackup(sharedQueueSequence: queue.lastSequence)
+            }
+
+            return SharedSyncQueueSyncResult(
+                queueURL: queueURL,
+                pulledOperationCount: pulledOperationCount,
+                pushedOperationCount: pushedOperationCount,
+                lastAppliedQueueSequence: queue.lastSequence,
+                createdQueue: loadResult.createdQueue,
+                compactedOperationCount: compactionResult.compactedOperationCount,
+                retainedOperationCount: queue.operations.count
+            )
+        }
+    }
+
     // MARK: - CRUD
 
     func add(_ recipe: Recipe) {
-        recipes.append(Self.sanitizedRecipe(recipe, source: "add"))
+        let stampedRecipe = stampedRecipe(recipe, fallbackCreatedAt: recipe.createdAt)
+        recipes.append(Self.sanitizedRecipe(stampedRecipe, source: "add"))
         save()
+        if let addedRecipe = recipes.last {
+            enqueuePendingOperation(makeRecipeUpsertOperation(for: addedRecipe))
+        }
     }
 
     func update(_ recipe: Recipe) {
         if let idx = recipes.firstIndex(where: { $0.id == recipe.id }) {
             let existing = recipes[idx]
-            var candidate = recipe
+            var candidate = stampedRecipe(recipe, fallbackCreatedAt: existing.createdAt)
 
             if let existingFilename = existing.photoFilename {
                 let imageDidChange = existing.imageData != recipe.imageData
@@ -329,10 +768,12 @@ class RecipeStore: ObservableObject {
 
             recipes[idx] = Self.sanitizedRecipe(candidate, source: "update")
             save()
+            enqueuePendingOperation(makeRecipeUpsertOperation(for: recipes[idx]))
         }
     }
 
     func delete(_ recipe: Recipe) {
+        enqueuePendingOperation(makeRecipeDeleteOperation(for: recipe))
         if let photoFilename = recipe.photoFilename {
             try? recipeImageStorage.deleteImage(named: photoFilename)
         }
@@ -346,6 +787,7 @@ class RecipeStore: ObservableObject {
     func delete(at offsets: IndexSet, in list: [Recipe]) {
     let ids = offsets.map { list[$0].id }
     let recipesToDelete = recipes.filter { ids.contains($0.id) }
+    recipesToDelete.forEach { enqueuePendingOperation(makeRecipeDeleteOperation(for: $0)) }
     recipesToDelete.compactMap(\.photoFilename).forEach { filename in
         try? recipeImageStorage.deleteImage(named: filename)
     }
@@ -415,14 +857,19 @@ class RecipeStore: ObservableObject {
     // MARK: - Grocery List
 
     func createGroceryList(for recipe: Recipe) {
-        currentGroceryList = GroceryList(recipe: recipe)
+        currentGroceryList = stampedGroceryList(GroceryList(recipe: recipe))
         saveGroceryList()
+        if let currentGroceryList {
+            enqueuePendingOperation(makeReplaceGroceryListOperation(currentGroceryList))
+        }
     }
 
     func toggleFavorite(for recipe: Recipe) {
         guard let index = recipes.firstIndex(where: { $0.id == recipe.id }) else { return }
         recipes[index].isFavorite.toggle()
+        recipes[index] = stampedRecipe(recipes[index], fallbackCreatedAt: recipes[index].createdAt)
         save()
+        enqueuePendingOperation(makeRecipeUpsertOperation(for: recipes[index]))
     }
 
     func toggleGroceryItem(id: UUID) {
@@ -430,11 +877,14 @@ class RecipeStore: ObservableObject {
               let index = list.items.firstIndex(where: { $0.id == id }) else { return }
 
         list.items[index].isChecked.toggle()
+        list = stampedGroceryList(list, fallbackCreatedAt: list.createdAt)
         currentGroceryList = list
         saveGroceryList()
+        enqueuePendingOperation(makeReplaceGroceryListOperation(list))
     }
 
     func clearGroceryList() {
+        enqueuePendingOperation(makeClearGroceryListOperation())
         currentGroceryList = nil
 
         do {
@@ -524,7 +974,9 @@ class RecipeStore: ObservableObject {
         }
 
         recipes[index] = Self.sanitizedRecipe(updated, source: "generated image")
+        recipes[index] = stampedRecipe(recipes[index], fallbackCreatedAt: recipes[index].createdAt)
         save()
+        enqueuePendingOperation(makeRecipeUpsertOperation(for: recipes[index]))
     }
 
     func recipeImageURL(for recipe: Recipe) -> URL? {
@@ -592,7 +1044,16 @@ class RecipeStore: ObservableObject {
             throw SyncPackageError.invalidPackage
         }
 
-        let backupURL = try createAutomaticSyncBackup()
+        return try applySyncPackage(package, createAutomaticBackup: true)
+    }
+
+    private func applySyncPackage(
+        _ package: RecipeSyncPackage,
+        createAutomaticBackup: Bool
+    ) throws -> SyncPackageImportResult {
+        let backupURL = createAutomaticBackup
+            ? try createAutomaticSyncBackup()
+            : syncBackupDirectoryURL
 
         try replaceDirectoryContents(
             at: recipeImageStorage.directoryURL,
@@ -943,16 +1404,375 @@ class RecipeStore: ObservableObject {
         }
     }
 
-    private func makeSyncPackage() throws -> RecipeSyncPackage {
+    private func stampedRecipe(_ recipe: Recipe, fallbackCreatedAt: Date) -> Recipe {
+        var stamped = Self.sanitizedRecipe(recipe, source: "sync stamp")
+        let now = Date()
+        stamped.createdAt = min(stamped.createdAt, now)
+        if stamped.createdAt == Date.distantPast {
+            stamped.createdAt = fallbackCreatedAt
+        }
+        stamped.updatedAt = max(now, stamped.createdAt)
+        stamped.lastModifiedByDeviceID = deviceIdentifier
+        return stamped
+    }
+
+    private func stampedGroceryList(_ groceryList: GroceryList, fallbackCreatedAt: Date? = nil) -> GroceryList {
+        var stamped = groceryList
+        let now = Date()
+        stamped.createdAt = fallbackCreatedAt ?? min(stamped.createdAt, now)
+        stamped.updatedAt = max(now, stamped.createdAt)
+        stamped.lastModifiedByDeviceID = deviceIdentifier
+        return stamped
+    }
+
+    private func makeRecipeUpsertOperation(for recipe: Recipe) -> RecipeSyncQueue.Operation {
+        RecipeSyncQueue.Operation(
+            sourceDeviceID: deviceIdentifier,
+            sourceDeviceName: deviceName,
+            kind: .upsertRecipe,
+            recipe: recipe,
+            recipeID: recipe.id,
+            generatedImages: storedGeneratedFiles(for: recipe),
+            livePhotos: storedLivePhotoFiles(for: recipe)
+        )
+    }
+
+    private func makeRecipeDeleteOperation(for recipe: Recipe) -> RecipeSyncQueue.Operation {
+        RecipeSyncQueue.Operation(
+            createdAt: Date(),
+            sourceDeviceID: deviceIdentifier,
+            sourceDeviceName: deviceName,
+            kind: .deleteRecipe,
+            recipeID: recipe.id
+        )
+    }
+
+    private func makeReplaceGroceryListOperation(_ groceryList: GroceryList) -> RecipeSyncQueue.Operation {
+        RecipeSyncQueue.Operation(
+            sourceDeviceID: deviceIdentifier,
+            sourceDeviceName: deviceName,
+            kind: .replaceGroceryList,
+            groceryList: groceryList
+        )
+    }
+
+    private func makeClearGroceryListOperation() -> RecipeSyncQueue.Operation {
+        RecipeSyncQueue.Operation(
+            createdAt: Date(),
+            sourceDeviceID: deviceIdentifier,
+            sourceDeviceName: deviceName,
+            kind: .clearGroceryList
+        )
+    }
+
+    private func enqueuePendingOperation(_ operation: RecipeSyncQueue.Operation) {
+        switch operation.kind {
+        case .upsertRecipe, .deleteRecipe:
+            guard let recipeID = operation.recipeID else { return }
+            syncLocalState.pendingOperations.removeAll {
+                ($0.kind == .upsertRecipe || $0.kind == .deleteRecipe) && $0.recipeID == recipeID
+            }
+        case .replaceGroceryList, .clearGroceryList:
+            syncLocalState.pendingOperations.removeAll {
+                $0.kind == .replaceGroceryList || $0.kind == .clearGroceryList
+            }
+        }
+
+        syncLocalState.pendingOperations.append(operation)
+        saveSyncLocalState()
+    }
+
+    private func loadSharedSyncQueue(from url: URL) throws -> (queue: RecipeSyncQueue, createdQueue: Bool) {
+        let fileManager = FileManager.default
+        guard fileManager.fileExists(atPath: url.path) else {
+            return (
+                RecipeSyncQueue(
+                    formatVersion: RecipeSyncQueue.currentFormatVersion,
+                    lastSequence: 0,
+                    operations: []
+                ),
+                true
+            )
+        }
+
+        let data = try Data(contentsOf: url)
+        if data.isEmpty {
+            return (
+                RecipeSyncQueue(
+                    formatVersion: RecipeSyncQueue.currentFormatVersion,
+                    lastSequence: 0,
+                    operations: []
+                ),
+                true
+            )
+        }
+
+        guard let queue = try? RecipeSyncPackage.decoder.decode(RecipeSyncQueue.self, from: data) else {
+            throw SharedSyncQueueError.invalidQueue
+        }
+
+        return (queue, false)
+    }
+
+    private func saveSharedSyncQueue(_ queue: RecipeSyncQueue, to url: URL) throws {
+        let directoryURL = url.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        let data = try RecipeSyncPackage.encoder.encode(queue)
+        try data.write(to: url, options: .atomic)
+    }
+
+    private func withRememberedSharedQueueURL<T>(_ body: (URL) throws -> T) throws -> T {
+        if let bookmark = syncLocalState.rememberedQueueBookmark {
+            var isStale = false
+            let url = try URL(
+                resolvingBookmarkData: bookmark,
+                options: [],
+                relativeTo: nil,
+                bookmarkDataIsStale: &isStale
+            )
+
+            if isStale {
+                try rememberSharedSyncQueue(at: url)
+            }
+
+            let didAccess = url.startAccessingSecurityScopedResource()
+            defer {
+                if didAccess {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+
+            return try body(url)
+        }
+
+        guard let rememberedQueuePath = syncLocalState.rememberedQueuePath,
+              rememberedQueuePath.isEmpty == false else {
+            throw SharedSyncQueueError.noRememberedQueue
+        }
+
+        return try body(URL(fileURLWithPath: rememberedQueuePath))
+    }
+
+    private func applyRemoteSharedSyncOperations(_ operations: [RecipeSyncQueue.Operation]) throws -> Int {
+        guard operations.isEmpty == false else { return 0 }
+
+        var appliedCount = 0
+        var didChangeRecipes = false
+        var didChangeGroceryList = false
+
+        for operation in operations.sorted(by: { ($0.sequence ?? 0) < ($1.sequence ?? 0) }) {
+            switch operation.kind {
+            case .upsertRecipe:
+                guard let incomingRecipe = operation.recipe else { continue }
+
+                if let localPendingOperation = latestPendingRecipeOperation(for: incomingRecipe.id) {
+                    switch localPendingOperation.kind {
+                    case .upsertRecipe:
+                        if let pendingRecipe = localPendingOperation.recipe,
+                           pendingRecipe.updatedAt >= incomingRecipe.updatedAt {
+                            continue
+                        }
+                    case .deleteRecipe:
+                        if localPendingOperation.createdAt >= incomingRecipe.updatedAt {
+                            continue
+                        }
+                    default:
+                        break
+                    }
+                }
+
+                try writeStoredFiles(operation.generatedImages, into: recipeImageStorage.directoryURL)
+                try writeStoredFiles(operation.livePhotos, into: livePhotoDirectoryURL)
+
+                let sanitizedIncoming = Self.sanitizedRecipe(incomingRecipe, source: "shared queue import")
+                if let currentIndex = recipes.firstIndex(where: { $0.id == sanitizedIncoming.id }) {
+                    recipes[currentIndex] = sanitizedIncoming
+                } else {
+                    recipes.append(sanitizedIncoming)
+                }
+                didChangeRecipes = true
+                appliedCount += 1
+            case .deleteRecipe:
+                guard let recipeID = operation.recipeID,
+                      let index = recipes.firstIndex(where: { $0.id == recipeID }) else { continue }
+
+                if let localPendingOperation = latestPendingRecipeOperation(for: recipeID) {
+                    switch localPendingOperation.kind {
+                    case .upsertRecipe:
+                        if let pendingRecipe = localPendingOperation.recipe,
+                           pendingRecipe.updatedAt >= operation.createdAt {
+                            continue
+                        }
+                    case .deleteRecipe:
+                        if localPendingOperation.createdAt >= operation.createdAt {
+                            continue
+                        }
+                    default:
+                        break
+                    }
+                }
+
+                let currentRecipe = recipes[index]
+                if let photoFilename = currentRecipe.photoFilename {
+                    try? recipeImageStorage.deleteImage(named: photoFilename)
+                }
+                if let recipeCardFilename = currentRecipe.recipeCardFilename {
+                    try? recipeImageStorage.deleteImage(named: recipeCardFilename)
+                }
+                recipes.remove(at: index)
+                didChangeRecipes = true
+                appliedCount += 1
+            case .replaceGroceryList:
+                guard let incomingGroceryList = operation.groceryList else { continue }
+                if let localPendingOperation = latestPendingGroceryOperation() {
+                    switch localPendingOperation.kind {
+                    case .replaceGroceryList:
+                        if let pendingGroceryList = localPendingOperation.groceryList,
+                           pendingGroceryList.updatedAt >= incomingGroceryList.updatedAt {
+                            continue
+                        }
+                    case .clearGroceryList:
+                        if localPendingOperation.createdAt >= incomingGroceryList.updatedAt {
+                            continue
+                        }
+                    default:
+                        break
+                    }
+                }
+
+                currentGroceryList = incomingGroceryList
+                didChangeGroceryList = true
+                appliedCount += 1
+            case .clearGroceryList:
+                if let localPendingOperation = latestPendingGroceryOperation() {
+                    switch localPendingOperation.kind {
+                    case .replaceGroceryList:
+                        if let pendingGroceryList = localPendingOperation.groceryList,
+                           pendingGroceryList.updatedAt >= operation.createdAt {
+                            continue
+                        }
+                    case .clearGroceryList:
+                        if localPendingOperation.createdAt >= operation.createdAt {
+                            continue
+                        }
+                    default:
+                        break
+                    }
+                }
+
+                currentGroceryList = nil
+                didChangeGroceryList = true
+                appliedCount += 1
+            }
+        }
+
+        if didChangeRecipes {
+            recipes = Self.reconciledRecipes(Self.sanitizedRecipes(recipes, source: "shared queue reconcile"))
+            save()
+            livePhotoDirectorySignature = Self.recipePhotoDirectorySignature(at: livePhotoDirectoryURL)
+            liveRecipePhotos = Self.loadRecipePhotos(from: livePhotoDirectoryURL)
+            hydratePhotosIfAvailable()
+        }
+
+        if didChangeGroceryList {
+            if currentGroceryList == nil {
+                do {
+                    if FileManager.default.fileExists(atPath: groceryListURL.path) {
+                        try FileManager.default.removeItem(at: groceryListURL)
+                    }
+                } catch {
+                    print("RecipeStore clear grocery list error: \(error)")
+                }
+            } else {
+                saveGroceryList()
+            }
+        }
+
+        return appliedCount
+    }
+
+    private func latestPendingRecipeOperation(for recipeID: UUID) -> RecipeSyncQueue.Operation? {
+        syncLocalState.pendingOperations.last {
+            ($0.kind == .upsertRecipe || $0.kind == .deleteRecipe) && $0.recipeID == recipeID
+        }
+    }
+
+    private func latestPendingGroceryOperation() -> RecipeSyncQueue.Operation? {
+        syncLocalState.pendingOperations.last {
+            $0.kind == .replaceGroceryList || $0.kind == .clearGroceryList
+        }
+    }
+
+    private func compactSharedSyncQueue(_ queue: RecipeSyncQueue) -> (queue: RecipeSyncQueue, compactedOperationCount: Int) {
+        var latestRecipeSequenceByID: [UUID: Int] = [:]
+        var latestGrocerySequence: Int?
+
+        for operation in queue.operations {
+            guard let sequence = operation.sequence else { continue }
+
+            switch operation.kind {
+            case .upsertRecipe, .deleteRecipe:
+                guard let recipeID = operation.recipeID else { continue }
+                latestRecipeSequenceByID[recipeID] = max(latestRecipeSequenceByID[recipeID] ?? 0, sequence)
+            case .replaceGroceryList, .clearGroceryList:
+                latestGrocerySequence = max(latestGrocerySequence ?? 0, sequence)
+            }
+        }
+
+        let retainedOperations = queue.operations.filter { operation in
+            guard let sequence = operation.sequence else { return false }
+
+            switch operation.kind {
+            case .upsertRecipe, .deleteRecipe:
+                guard let recipeID = operation.recipeID else { return false }
+                return latestRecipeSequenceByID[recipeID] == sequence
+            case .replaceGroceryList, .clearGroceryList:
+                return latestGrocerySequence == sequence
+            }
+        }
+
+        return (
+            RecipeSyncQueue(
+                formatVersion: queue.formatVersion,
+                lastSequence: queue.lastSequence,
+                operations: retainedOperations.sorted { ($0.sequence ?? 0) < ($1.sequence ?? 0) }
+            ),
+            max(queue.operations.count - retainedOperations.count, 0)
+        )
+    }
+
+    private func makeSyncPackage(sharedQueueSequence: Int? = nil) throws -> RecipeSyncPackage {
         RecipeSyncPackage(
             formatVersion: RecipeSyncPackage.currentFormatVersion,
             exportedAt: Date(),
-            sourceDeviceName: UIDevice.current.name,
+            sourceDeviceName: deviceName,
+            sharedQueueSequence: sharedQueueSequence,
             recipes: recipes,
             groceryList: currentGroceryList,
             generatedImages: try storedFiles(in: recipeImageStorage.directoryURL),
             livePhotos: try storedFiles(in: livePhotoDirectoryURL)
         )
+    }
+
+    private func storedGeneratedFiles(for recipe: Recipe) -> [RecipeSyncPackage.StoredFile] {
+        [recipe.photoFilename, recipe.recipeCardFilename]
+            .compactMap { $0 }
+            .compactMap { filename in
+                guard let data = recipeImageStorage.loadImage(named: filename) else { return nil }
+                return RecipeSyncPackage.StoredFile(filename: filename, data: data)
+            }
+    }
+
+    private func storedLivePhotoFiles(for recipe: Recipe) -> [RecipeSyncPackage.StoredFile] {
+        Self.photoFileURLs(in: livePhotoDirectoryURL)
+            .filter { url in
+                let lookupKey = url.deletingPathExtension().lastPathComponent.photoLookupKey
+                return recipe.photoLookupKeys.contains(lookupKey)
+            }
+            .compactMap { url in
+                guard let data = try? Data(contentsOf: url) else { return nil }
+                return RecipeSyncPackage.StoredFile(filename: url.lastPathComponent, data: data)
+            }
     }
 
     private func storedFiles(in directoryURL: URL) throws -> [RecipeSyncPackage.StoredFile] {
@@ -975,6 +1795,21 @@ class RecipeStore: ObservableObject {
         }
     }
 
+    private func writeStoredFiles(
+        _ files: [RecipeSyncPackage.StoredFile],
+        into directoryURL: URL
+    ) throws {
+        guard files.isEmpty == false else { return }
+        try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+
+        for file in files {
+            let filename = URL(fileURLWithPath: file.filename).lastPathComponent
+            guard filename.isEmpty == false else { continue }
+            let destinationURL = directoryURL.appendingPathComponent(filename)
+            try file.data.write(to: destinationURL, options: .atomic)
+        }
+    }
+
     private func createAutomaticSyncBackup() throws -> URL {
         let backupDirectoryURL = syncBackupDirectoryURL
         try FileManager.default.createDirectory(at: backupDirectoryURL, withIntermediateDirectories: true)
@@ -985,6 +1820,52 @@ class RecipeStore: ObservableObject {
         )
         try RecipeSyncPackage.encoder.encode(package).write(to: backupURL, options: .atomic)
         return backupURL
+    }
+
+    private func writeLatestSharedSyncBackup(sharedQueueSequence: Int) throws {
+        guard let locations = canonicalSharedSyncLocations() else {
+            throw SharedSyncQueueError.iCloudSharedSyncUnavailable
+        }
+
+        let fileManager = FileManager.default
+        try fileManager.createDirectory(at: locations.archivedBackupsDirectoryURL, withIntermediateDirectories: true)
+
+        let package = try makeSyncPackage(sharedQueueSequence: sharedQueueSequence)
+        let data = try RecipeSyncPackage.encoder.encode(package)
+        try data.write(to: locations.latestBackupURL, options: .atomic)
+
+        let archivedBackupURL = locations.archivedBackupsDirectoryURL.appendingPathComponent(
+            "MomRecette-Backup-\(timestampString(for: package.exportedAt)).json"
+        )
+        try data.write(to: archivedBackupURL, options: .atomic)
+        try trimArchivedSharedBackups(in: locations.archivedBackupsDirectoryURL)
+    }
+
+    private func trimArchivedSharedBackups(in directoryURL: URL) throws {
+        let fileManager = FileManager.default
+        let backupURLs = try fileManager.contentsOfDirectory(
+            at: directoryURL,
+            includingPropertiesForKeys: [.contentModificationDateKey],
+            options: [.skipsHiddenFiles]
+        )
+            .filter { $0.pathExtension.lowercased() == "json" }
+            .sorted {
+                let lhsDate = (try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+                let rhsDate = (try? $1.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+                return lhsDate > rhsDate
+            }
+
+        guard backupURLs.count > Self.sharedSyncArchivedBackupRetentionCount else { return }
+
+        for url in backupURLs.dropFirst(Self.sharedSyncArchivedBackupRetentionCount) {
+            try? fileManager.removeItem(at: url)
+        }
+    }
+
+    private func timestampString(for date: Date) -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.string(from: date).replacingOccurrences(of: ":", with: "-")
     }
 
     private func replaceDirectoryContents(
@@ -1232,6 +2113,10 @@ class RecipeStore: ObservableObject {
             ? primary.generatedRecipeCardPrompt ?? secondary.generatedRecipeCardPrompt
             : secondary.generatedRecipeCardPrompt ?? primary.generatedRecipeCardPrompt
         merged.createdAt = min(primary.createdAt, secondary.createdAt)
+        merged.updatedAt = max(primary.updatedAt, secondary.updatedAt)
+        merged.lastModifiedByDeviceID = merged.updatedAt == primary.updatedAt
+            ? primary.lastModifiedByDeviceID ?? secondary.lastModifiedByDeviceID
+            : secondary.lastModifiedByDeviceID ?? primary.lastModifiedByDeviceID
         return merged
     }
 
@@ -1289,6 +2174,98 @@ class RecipeStore: ObservableObject {
             return nil
         }
         return data
+    }
+
+    private var hasRememberedSharedQueue: Bool {
+        if let rememberedQueuePath = syncLocalState.rememberedQueuePath, rememberedQueuePath.isEmpty == false {
+            return true
+        }
+
+        return syncLocalState.rememberedQueueBookmark != nil
+    }
+
+    private func startupNoticeMessage(for status: SharedSyncBootstrapStatus) -> String {
+        if status.canRestoreFromLatestBackup {
+            return "Une sauvegarde partagee a ete trouvee pour cet appareil. Ouvrez Sync et initialisez MomRecette depuis la sauvegarde partagee avant de reprendre la synchronisation automatique."
+        }
+
+        if status.isAwaitingInitialSharedBackup {
+            if status.hasLocalLibraryData {
+                return "Aucune sauvegarde partagee n'est disponible pour l'instant. Ouvrez Sync et republiez la queue partagee depuis cet appareil afin de publier la premiere sauvegarde."
+            }
+
+            return "Aucune sauvegarde partagee n'est disponible pour l'instant. Ouvrez Sync sur l'appareil source qui contient deja vos recettes afin de publier la premiere sauvegarde partagee."
+        }
+
+        return "Cet appareil ne connait pas encore son point de reprise de sync. Ouvrez Sync et initialisez-le depuis la sauvegarde partagee ou reconfigurez la queue."
+    }
+
+    private func canonicalSharedSyncLocations() -> SharedSyncLocations? {
+        let rootURL: URL?
+        if let sharedSyncRootOverrideURL {
+            rootURL = sharedSyncRootOverrideURL
+        } else {
+            rootURL = FileManager.default.url(
+                forUbiquityContainerIdentifier: MomRecetteSetup.CloudSync.containerIdentifier
+            )?.appendingPathComponent("Documents", isDirectory: true)
+        }
+
+        guard let rootURL else { return nil }
+
+        let directoryURL = rootURL.appendingPathComponent(Self.sharedSyncDirectoryName, isDirectory: true)
+        return SharedSyncLocations(
+            directoryURL: directoryURL,
+            queueURL: directoryURL.appendingPathComponent(RecipeSyncQueue.defaultFilename),
+            latestBackupURL: directoryURL.appendingPathComponent(Self.sharedSyncLatestBackupFilename),
+            archivedBackupsDirectoryURL: directoryURL.appendingPathComponent(Self.sharedSyncArchivedBackupsDirectoryName, isDirectory: true)
+        )
+    }
+
+    private func autoConfigureCanonicalSharedSyncQueueIfPossible() {
+        guard hasRememberedSharedQueue == false,
+              let locations = canonicalSharedSyncLocations() else {
+            return
+        }
+
+        syncLocalState.rememberedQueuePath = locations.queueURL.path
+        if syncLocalState.rememberedQueueBookmark == nil {
+            syncLocalState.rememberedQueueBookmark = try? locations.queueURL.bookmarkData(
+                options: [],
+                includingResourceValuesForKeys: nil,
+                relativeTo: nil
+            )
+        }
+        saveSyncLocalState()
+    }
+
+    private func preserveLocalBootstrapRecipes(excludingRecipeIDs sharedRecipeIDs: Set<UUID>) -> [PreservedBootstrapRecipe] {
+        recipes
+            .filter { sharedRecipeIDs.contains($0.id) == false }
+            .map { recipe in
+                PreservedBootstrapRecipe(
+                    recipe: recipe,
+                    generatedImages: storedGeneratedFiles(for: recipe),
+                    livePhotos: storedLivePhotoFiles(for: recipe)
+                )
+            }
+    }
+
+    private func saveSyncLocalState() {
+        do {
+            let data = try RecipeSyncPackage.encoder.encode(syncLocalState)
+            try data.write(to: syncStateURL, options: .atomic)
+        } catch {
+            print("RecipeStore save sync local state error: \(error)")
+        }
+    }
+
+    private static func loadSyncLocalState(from url: URL) -> RecipeSyncLocalState {
+        guard let data = try? Data(contentsOf: url),
+              let state = try? RecipeSyncPackage.decoder.decode(RecipeSyncLocalState.self, from: data) else {
+            return RecipeSyncLocalState()
+        }
+
+        return state
     }
 
     private static func persistentMigrationDefaultsKey(for storeURL: URL) -> String {

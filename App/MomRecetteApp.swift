@@ -48,6 +48,36 @@ struct MomRecetteSetup {
         static let disableEnvironmentKey = "MOMRECETTE_DISABLE_CLOUDKIT"
     }
 
+    struct SharedSync {
+        static let rootOverrideEnvironmentKey = "MOMRECETTE_SHARED_SYNC_ROOT"
+
+        static func resolvedRootOverrideURL(
+            environment: [String: String] = ProcessInfo.processInfo.environment,
+            isSimulatorRuntime: Bool = {
+                #if targetEnvironment(simulator)
+                true
+                #else
+                false
+                #endif
+            }()
+        ) -> URL? {
+            if let explicitRoot = environment[rootOverrideEnvironmentKey]?.trimmingCharacters(in: .whitespacesAndNewlines),
+               explicitRoot.isEmpty == false {
+                return URL(fileURLWithPath: explicitRoot, isDirectory: true)
+            }
+
+            guard isSimulatorRuntime,
+                  let hostHome = environment["SIMULATOR_HOST_HOME"]?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  hostHome.isEmpty == false else {
+                return nil
+            }
+
+            return URL(fileURLWithPath: hostHome, isDirectory: true)
+                .appendingPathComponent("Documents", isDirectory: true)
+                .appendingPathComponent("MomRecette-Simulator", isDirectory: true)
+        }
+    }
+
     struct RecipeWorkspace {
         static let defaultSection: RecipeWorkspaceSection = .ingredients
 
@@ -96,6 +126,8 @@ struct MomRecetteApp: App {
     }
 
     private static func makeDefaultStore() -> RecipeStore {
+        let sharedSyncRootURL = MomRecetteSetup.SharedSync.resolvedRootOverrideURL()
+
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
             let rootURL = FileManager.default.temporaryDirectory
                 .appendingPathComponent("MomRecette-Tests-\(UUID().uuidString)", isDirectory: true)
@@ -114,12 +146,16 @@ struct MomRecetteApp: App {
                 recipeImageStorage: RecipeImageStorage(
                     directoryURL: rootURL.appendingPathComponent("RecipeImages", isDirectory: true)
                 ),
-                persistentContainer: persistentContainer
+                persistentContainer: persistentContainer,
+                sharedSyncRootURL: sharedSyncRootURL
             )
         }
 
         let persistentContainer = makePersistentContainer()
-        return RecipeStore(persistentContainer: persistentContainer)
+        return RecipeStore(
+            persistentContainer: persistentContainer,
+            sharedSyncRootURL: sharedSyncRootURL
+        )
     }
 
     private static func makePersistentContainer() -> RecipePersistentContainer? {

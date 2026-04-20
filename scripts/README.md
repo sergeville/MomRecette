@@ -119,6 +119,77 @@ Notes:
 
 Archive and export an iPhone installable build named `sergeiPhone`.
 
+## `reconcile_minutes.sh`
+
+Reconcile the current MomRecette daily minutes file with the canonical Archon
+`Minutes Inbox` flow managed from `Synapse`.
+
+This wrapper does two things through the platform command:
+
+- sync unresolved minute items into `Minutes Inbox`
+- write Archon task outcomes back into the same minutes file, including the Archon task ID
+
+Examples:
+
+```bash
+bash scripts/reconcile_minutes.sh
+bash scripts/reconcile_minutes.sh minute-20260420.md
+```
+
+Notes:
+
+- by default it uses the latest `minute-YYYYMMDD.md` file in the repo root
+- it expects `Synapse` at `~/Dev/Synapse`
+- override with `SYNAPSE_ROOT=/custom/path/to/Synapse` if needed
+
+## `close_session.sh`
+
+Canonical MomRecette session-close command.
+
+Examples:
+
+```bash
+bash scripts/close_session.sh
+bash scripts/close_session.sh minute-20260420.md
+```
+
+This command:
+
+- runs `scripts/reconcile_minutes.sh`
+- updates the latest daily minutes file by default
+- appends a small local trace to `local/archives/session-close.log`
+- keeps the repo-level workflow obvious: close session -> reconcile minutes
+
+## `simulator_sharedsync_smoke.sh`
+
+Prepare a repeatable two-simulator SharedSync smoke run on one Mac.
+
+Examples:
+
+```bash
+bash scripts/simulator_sharedsync_smoke.sh
+bash scripts/simulator_sharedsync_smoke.sh --clean
+bash scripts/simulator_sharedsync_smoke.sh --phone-name "iPhone 17" --tablet-name "iPad (A16)"
+```
+
+This command:
+
+- builds MomRecette once for iOS Simulator
+- boots one phone simulator and one iPad simulator
+- installs the same app build on both
+- launches both with:
+  - `MOMRECETTE_SHARED_SYNC_ROOT`
+  - `MOMRECETTE_DISABLE_CLOUDKIT=1`
+- prints the exact SharedSync folder and the next manual smoke steps
+
+Notes:
+
+- default phone: `iPhone 15 Plus`
+- default tablet: `iPad Pro 11-inch (M5)`
+- default shared root: `~/Documents/MomRecette-Simulator`
+- use `--clean` to reset `SharedSync/` and uninstall MomRecette from both selected simulators before the run
+- `--clean` is the mode to use when you need a true fresh-install startup/foreground validation baseline
+
 Examples:
 
 ```bash

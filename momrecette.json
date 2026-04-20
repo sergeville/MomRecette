@@ -5375,37 +5375,17 @@
       {
         "quantity": "",
         "name": "c.a soupe de beurre"
-      },
-      {
-        "quantity": "",
-        "name": "Verser tous les ingredients de la saumure dans un bol et melanger jusqu'à ce que le sucre et le sel soit dissous."
-      },
-      {
-        "quantity": "",
-        "name": "Deposer la poitrine de dinde et laisser saumurer 3 hres au frigo."
-      },
-      {
-        "quantity": "",
-        "name": "Retirer la dinde et l’eponger avec du papier absorbant,ficeler si desire."
-      },
-      {
-        "quantity": "",
-        "name": "Prechauffer le four a 350"
-      },
-      {
-        "quantity": "",
-        "name": "Dans une grande poele,saisir la poitrine dans l’huile et la retourner pour colorer de toutes parts.Ajouter les echalotes francaises ou oignons."
-      },
-      {
-        "quantity": "",
-        "name": "Cuire 1 hre au centre du four.Ajouter le reste des ingredients sauf le beurre  et poursuivre la cuisson pendant 15 mtes,ou jusqu'à ce que la temperature interne de la dinde atteigne 160f ou 70c.Retirer la dinde du four,la couvrir d’aluminium et laisser reposer15 mtes.La temperature interne continuera a monter jusqu'à 170f ou 70c"
-      },
-      {
-        "quantity": "",
-        "name": "Pendant ce temps,faire reduire le jus de cuisson (sans le passer) 2 minutes a feu eleve.Ajouter les morceaux de beurre froid un a la fois en fouettant.Trancher la dinde,la servir dans le jus de cuisson.Servir avec de la pureee de patates douces et des legumes."
       }
     ],
-    "steps": [],
+    "steps": [
+      "Verser tous les ingredients de la saumure dans un bol et melanger jusqu'à ce que le sucre et le sel soit dissous.",
+      "Deposer la poitrine de dinde et laisser saumurer 3 hres au frigo.",
+      "Retirer la dinde et l’eponger avec du papier absorbant,ficeler si desire.",
+      "Prechauffer le four a 350",
+      "Dans une grande poele,saisir la poitrine dans l’huile et la retourner pour colorer de toutes parts.Ajouter les echalotes francaises ou oignons.",
+      "Cuire 1 hre au centre du four.Ajouter le reste des ingredients sauf le beurre  et poursuivre la cuisson pendant 15 mtes,ou jusqu'à ce que la temperature interne de la dinde atteigne 160f ou 70c.Retirer la dinde du four,la couvrir d’aluminium et laisser reposer15 mtes.La temperature interne continuera a monter jusqu'à 170f ou 70c",
+      "Pendant ce temps,faire reduire le jus de cuisson (sans le passer) 2 minutes a feu eleve.Ajouter les morceaux de beurre froid un a la fois en fouettant.Trancher la dinde,la servir dans le jus de cuisson.Servir avec de la pureee de patates douces et des legumes."
+    ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:50.454385+00:00"
   },
@@ -7048,37 +7028,17 @@
       {
         "quantity": "1",
         "name": "c. a soupe miel ou sirop d’érable"
-      },
-      {
-        "quantity": "",
-        "name": "Dans une casserole moyenne, faire bouillir 6 tasses d’eau salée."
-      },
-      {
-        "quantity": "",
-        "name": "Ajouter l’edamame et porter a ébullition."
-      },
-      {
-        "quantity": "",
-        "name": "Laisser cuire 3 minutes, ajouter les haricots et bouillir encore 3 minutes."
-      },
-      {
-        "quantity": "",
-        "name": "Égoutter les haricots et les rincer a l’eau froide."
-      },
-      {
-        "quantity": "",
-        "name": "Dans un bol moyen, mélanger les haricots refroidis et les pois chiches."
-      },
-      {
-        "quantity": "",
-        "name": "Vesser la vinaigrette en filet et remuer pour tout enrober."
-      },
-      {
-        "quantity": "",
-        "name": "Saupoudrer les graines de sésame et servir."
       }
     ],
-    "steps": [],
+    "steps": [
+      "Dans une casserole moyenne, faire bouillir 6 tasses d’eau salée.",
+      "Ajouter l’edamame et porter a ébullition.",
+      "Laisser cuire 3 minutes, ajouter les haricots et bouillir encore 3 minutes.",
+      "Égoutter les haricots et les rincer a l’eau froide.",
+      "Dans un bol moyen, mélanger les haricots refroidis et les pois chiches.",
+      "Vesser la vinaigrette en filet et remuer pour tout enrober.",
+      "Saupoudrer les graines de sésame et servir."
+    ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:51.587984+00:00"
   },

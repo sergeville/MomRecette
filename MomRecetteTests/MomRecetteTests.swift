@@ -27,7 +27,10 @@ final class MomRecetteTests: XCTestCase {
         directory: URL? = nil,
         livePhotoDirectoryURL: URL? = nil,
         recipeImageGenerator: (any RecipeImageGenerating)? = nil,
-        persistentContainer: RecipePersistentContainer? = nil
+        persistentContainer: RecipePersistentContainer? = nil,
+        deviceIdentifier: String? = nil,
+        deviceName: String? = nil,
+        sharedSyncRootURL: URL? = nil
     ) throws -> RecipeStore {
         let directory = directory ?? FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -42,7 +45,10 @@ final class MomRecetteTests: XCTestCase {
                 directoryURL: directory.appendingPathComponent("RecipeImages", isDirectory: true)
             ),
             recipeImageGenerator: recipeImageGenerator,
-            persistentContainer: persistentContainer
+            persistentContainer: persistentContainer,
+            deviceIdentifier: deviceIdentifier,
+            deviceName: deviceName,
+            sharedSyncRootURL: sharedSyncRootURL
         )
     }
 
@@ -782,7 +788,358 @@ final class MomRecetteTests: XCTestCase {
         XCTAssertEqual(decoded.recipes.first?.name, "Export Payload")
     }
 
-    func testLocalCloudSyncMigrationImportsRealMacLibraryWhenEnabled() throws {
+    func testSharedSyncQueueRoundTripTracksLastSequenceAndLatestRecipeUpdate() throws {
+        let queueDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: queueDirectory, withIntermediateDirectories: true)
+        let queueURL = queueDirectory.appendingPathComponent("MomRecette-Sync-Queue.json")
+
+        let sourceStore = try makeStore(
+            directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true),
+            deviceIdentifier: "device-a",
+            deviceName: "Device A"
+        )
+        let destinationStore = try makeStore(
+            directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true),
+            deviceIdentifier: "device-b",
+            deviceName: "Device B"
+        )
+
+        let bootstrapPayload = try sourceStore.prepareSharedSyncQueueBootstrapPayload()
+        try bootstrapPayload.data.write(to: queueURL)
+
+        try sourceStore.rememberSharedSyncQueue(at: queueURL)
+        try destinationStore.rememberSharedSyncQueue(at: queueURL)
+
+        sourceStore.add(Recipe(name: "Queue Recipe", category: .plats, notes: "Version A"))
+
+        let sourcePush = try sourceStore.synchronizeWithRememberedSharedQueue()
+        XCTAssertEqual(sourcePush.pulledOperationCount, 0)
+        XCTAssertEqual(sourcePush.pushedOperationCount, 1)
+        XCTAssertEqual(sourcePush.lastAppliedQueueSequence, 1)
+        XCTAssertEqual(sourceStore.sharedSyncQueueStatus.pendingOperationCount, 0)
+
+        let destinationPull = try destinationStore.synchronizeWithRememberedSharedQueue()
+        XCTAssertEqual(destinationPull.pulledOperationCount, 1)
+        XCTAssertEqual(destinationPull.pushedOperationCount, 0)
+        XCTAssertEqual(destinationPull.lastAppliedQueueSequence, 1)
+        XCTAssertEqual(destinationStore.recipes.first?.name, "Queue Recipe")
+        XCTAssertEqual(destinationStore.recipes.first?.notes, "Version A")
+
+        var updatedRecipe = try XCTUnwrap(destinationStore.recipes.first)
+        updatedRecipe.notes = "Version B"
+        destinationStore.update(updatedRecipe)
+
+        let destinationPush = try destinationStore.synchronizeWithRememberedSharedQueue()
+        XCTAssertEqual(destinationPush.pulledOperationCount, 0)
+        XCTAssertEqual(destinationPush.pushedOperationCount, 1)
+        XCTAssertEqual(destinationPush.lastAppliedQueueSequence, 2)
+
+        let sourcePull = try sourceStore.synchronizeWithRememberedSharedQueue()
+        XCTAssertEqual(sourcePull.pulledOperationCount, 1)
+        XCTAssertEqual(sourcePull.pushedOperationCount, 0)
+        XCTAssertEqual(sourcePull.lastAppliedQueueSequence, 2)
+        XCTAssertEqual(sourceStore.recipes.first?.notes, "Version B")
+
+        let sourceNoOp = try sourceStore.synchronizeWithRememberedSharedQueue()
+        XCTAssertEqual(sourceNoOp.pulledOperationCount, 0)
+        XCTAssertEqual(sourceNoOp.pushedOperationCount, 0)
+        XCTAssertEqual(sourceNoOp.lastAppliedQueueSequence, 2)
+    }
+
+    func testSharedSyncQueuePropagatesRecipeDelete() throws {
+        let queueDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: queueDirectory, withIntermediateDirectories: true)
+        let queueURL = queueDirectory.appendingPathComponent("MomRecette-Sync-Queue.json")
+
+        let sourceStore = try makeStore(
+            directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true),
+            deviceIdentifier: "device-a",
+            deviceName: "Device A"
+        )
+        let destinationStore = try makeStore(
+            directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true),
+            deviceIdentifier: "device-b",
+            deviceName: "Device B"
+        )
+
+        let bootstrapPayload = try sourceStore.prepareSharedSyncQueueBootstrapPayload()
+        try bootstrapPayload.data.write(to: queueURL)
+
+        try sourceStore.rememberSharedSyncQueue(at: queueURL)
+        try destinationStore.rememberSharedSyncQueue(at: queueURL)
+
+        sourceStore.add(Recipe(name: "Delete Me", category: .plats))
+        _ = try sourceStore.synchronizeWithRememberedSharedQueue()
+        _ = try destinationStore.synchronizeWithRememberedSharedQueue()
+
+        let recipeToDelete = try XCTUnwrap(sourceStore.recipes.first)
+        sourceStore.delete(recipeToDelete)
+
+        let deletePush = try sourceStore.synchronizeWithRememberedSharedQueue()
+        XCTAssertEqual(deletePush.pushedOperationCount, 1)
+        XCTAssertEqual(deletePush.lastAppliedQueueSequence, 2)
+
+        let deletePull = try destinationStore.synchronizeWithRememberedSharedQueue()
+        XCTAssertEqual(deletePull.pulledOperationCount, 1)
+        XCTAssertTrue(destinationStore.recipes.isEmpty)
+    }
+
+    func testSharedSyncQueueCompactionKeepsLatestRecipeStateForStaleDevice() throws {
+        let queueDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: queueDirectory, withIntermediateDirectories: true)
+        let queueURL = queueDirectory.appendingPathComponent("MomRecette-Sync-Queue.json")
+
+        let sourceStore = try makeStore(
+            directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true),
+            deviceIdentifier: "device-a",
+            deviceName: "Device A"
+        )
+        let staleDestinationStore = try makeStore(
+            directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true),
+            deviceIdentifier: "device-c",
+            deviceName: "Device C"
+        )
+
+        let bootstrapPayload = try sourceStore.prepareSharedSyncQueueBootstrapPayload()
+        try bootstrapPayload.data.write(to: queueURL)
+
+        try sourceStore.rememberSharedSyncQueue(at: queueURL)
+        try staleDestinationStore.rememberSharedSyncQueue(at: queueURL)
+
+        sourceStore.add(Recipe(name: "Compacted Recipe", category: .plats, notes: "v1"))
+        _ = try sourceStore.synchronizeWithRememberedSharedQueue()
+
+        var recipe = try XCTUnwrap(sourceStore.recipes.first)
+        recipe.notes = "v2"
+        sourceStore.update(recipe)
+        let secondSync = try sourceStore.synchronizeWithRememberedSharedQueue()
+
+        XCTAssertEqual(secondSync.compactedOperationCount, 1)
+
+        let queueData = try Data(contentsOf: queueURL)
+        let queue = try RecipeSyncPackage.decoder.decode(RecipeSyncQueue.self, from: queueData)
+        XCTAssertEqual(queue.lastSequence, 2)
+        XCTAssertEqual(queue.operations.count, 1)
+        XCTAssertEqual(queue.operations.first?.sequence, 2)
+        XCTAssertEqual(queue.operations.first?.recipe?.notes, "v2")
+
+        let stalePull = try staleDestinationStore.synchronizeWithRememberedSharedQueue()
+        XCTAssertEqual(stalePull.pulledOperationCount, 1)
+        XCTAssertEqual(staleDestinationStore.recipes.first?.notes, "v2")
+        XCTAssertEqual(staleDestinationStore.sharedSyncQueueStatus.lastAppliedQueueSequence, 2)
+    }
+
+    func testAutomaticSharedQueueSyncShowsNoticeWhenCheckpointIsUnknown() throws {
+        let queueDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: queueDirectory, withIntermediateDirectories: true)
+        let queueURL = queueDirectory.appendingPathComponent("MomRecette-Sync-Queue.json")
+
+        let store = try makeStore(
+            directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true),
+            deviceIdentifier: "device-a",
+            deviceName: "Device A"
+        )
+
+        let bootstrapPayload = try store.prepareSharedSyncQueueBootstrapPayload()
+        try bootstrapPayload.data.write(to: queueURL)
+        try store.rememberSharedSyncQueue(at: queueURL)
+
+        store.performAutomaticSharedQueueSyncIfNeeded()
+
+        XCTAssertEqual(store.syncStartupNotice?.title, "Sync en attente")
+        XCTAssertTrue(store.syncStartupNotice?.message.contains("Aucune sauvegarde partagee") == true)
+    }
+
+    func testAutomaticSharedQueueSyncPullsLatestKnownChanges() throws {
+        let queueDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: queueDirectory, withIntermediateDirectories: true)
+        let queueURL = queueDirectory.appendingPathComponent("MomRecette-Sync-Queue.json")
+
+        let sourceStore = try makeStore(
+            directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true),
+            deviceIdentifier: "device-a",
+            deviceName: "Device A"
+        )
+        let destinationStore = try makeStore(
+            directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true),
+            deviceIdentifier: "device-b",
+            deviceName: "Device B"
+        )
+
+        let bootstrapPayload = try sourceStore.prepareSharedSyncQueueBootstrapPayload()
+        try bootstrapPayload.data.write(to: queueURL)
+
+        try sourceStore.rememberSharedSyncQueue(at: queueURL)
+        try destinationStore.rememberSharedSyncQueue(at: queueURL)
+
+        sourceStore.add(Recipe(name: "Auto Sync", category: .plats, notes: "v1"))
+        _ = try sourceStore.synchronizeWithRememberedSharedQueue()
+        _ = try destinationStore.synchronizeWithRememberedSharedQueue()
+
+        var updatedRecipe = try XCTUnwrap(sourceStore.recipes.first)
+        updatedRecipe.notes = "v2"
+        sourceStore.update(updatedRecipe)
+        _ = try sourceStore.synchronizeWithRememberedSharedQueue()
+
+        destinationStore.performAutomaticSharedQueueSyncIfNeeded()
+
+        XCTAssertEqual(destinationStore.recipes.first?.notes, "v2")
+        XCTAssertNil(destinationStore.syncStartupNotice)
+        XCTAssertEqual(destinationStore.sharedSyncQueueStatus.lastAppliedQueueSequence, 2)
+    }
+
+    func testAutomaticSharedQueueSyncAutoDiscoversCanonicalQueuePath() throws {
+        let sharedSyncRootURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: sharedSyncRootURL, withIntermediateDirectories: true)
+
+        let sourceStore = try makeStore(
+            directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true),
+            deviceIdentifier: "device-a",
+            deviceName: "Device A",
+            sharedSyncRootURL: sharedSyncRootURL
+        )
+        _ = try sourceStore.createOrRememberCanonicalSharedQueue()
+
+        let destinationStore = try makeStore(
+            directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true),
+            deviceIdentifier: "device-b",
+            deviceName: "Device B",
+            sharedSyncRootURL: sharedSyncRootURL
+        )
+
+        destinationStore.performAutomaticSharedQueueSyncIfNeeded(force: true)
+
+        XCTAssertTrue(destinationStore.sharedSyncQueueStatus.rememberedQueuePath?.hasSuffix("SharedSync/MomRecette-Sync-Queue.json") == true)
+        XCTAssertEqual(destinationStore.syncStartupNotice?.title, "Sync en attente")
+        XCTAssertTrue(destinationStore.syncStartupNotice?.message.contains("Aucune sauvegarde partagee") == true)
+        XCTAssertTrue(destinationStore.sharedSyncBootstrapStatus.isAwaitingInitialSharedBackup)
+    }
+
+    func testCreateCanonicalSharedQueueOnEmptyStoreDoesNotPretendBootstrapIsAvailable() throws {
+        let sharedSyncRootURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: sharedSyncRootURL, withIntermediateDirectories: true)
+
+        let store = try makeStore(
+            directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true),
+            deviceIdentifier: "device-a",
+            deviceName: "Device A",
+            sharedSyncRootURL: sharedSyncRootURL
+        )
+
+        _ = try store.createOrRememberCanonicalSharedQueue()
+        store.performAutomaticSharedQueueSyncIfNeeded(force: true)
+
+        XCTAssertFalse(store.sharedSyncBootstrapStatus.canRestoreFromLatestBackup)
+        XCTAssertTrue(store.sharedSyncBootstrapStatus.isAwaitingInitialSharedBackup)
+        XCTAssertTrue(store.syncStartupNotice?.message.contains("premiere sauvegarde partagee") == true)
+    }
+
+    func testCreateCanonicalSharedQueueSeedsLatestBackupAndKnownCheckpoint() throws {
+        let sharedSyncRootURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: sharedSyncRootURL, withIntermediateDirectories: true)
+
+        let store = try makeStore(
+            directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true),
+            deviceIdentifier: "device-a",
+            deviceName: "Device A",
+            sharedSyncRootURL: sharedSyncRootURL
+        )
+        store.add(Recipe(name: "Seeded Backup", category: .plats, notes: "baseline"))
+
+        let queueURL = try store.createOrRememberCanonicalSharedQueue()
+        let latestBackupURL = sharedSyncRootURL
+            .appendingPathComponent("SharedSync", isDirectory: true)
+            .appendingPathComponent("MomRecette-Latest-Backup.json")
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: queueURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: latestBackupURL.path))
+        XCTAssertTrue(store.sharedSyncQueueStatus.hasResolvedCheckpoint)
+
+        let backupData = try Data(contentsOf: latestBackupURL)
+        let backupPackage = try RecipeSyncPackage.decoder.decode(RecipeSyncPackage.self, from: backupData)
+        XCTAssertEqual(backupPackage.sharedQueueSequence, 0)
+        XCTAssertEqual(backupPackage.recipes.first?.name, "Seeded Backup")
+    }
+
+    func testBootstrapFromLatestSharedBackupRestoresBaselineAndPullsRemainingQueueChanges() throws {
+        let sharedSyncRootURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: sharedSyncRootURL, withIntermediateDirectories: true)
+        let latestBackupURL = sharedSyncRootURL
+            .appendingPathComponent("SharedSync", isDirectory: true)
+            .appendingPathComponent("MomRecette-Latest-Backup.json")
+
+        let sourceStore = try makeStore(
+            directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true),
+            deviceIdentifier: "device-a",
+            deviceName: "Device A",
+            sharedSyncRootURL: sharedSyncRootURL
+        )
+        sourceStore.add(Recipe(name: "Shared Baseline", category: .plats, notes: "v0"))
+        _ = try sourceStore.createOrRememberCanonicalSharedQueue()
+        let staleBaselineData = try Data(contentsOf: latestBackupURL)
+
+        var updatedSharedRecipe = try XCTUnwrap(sourceStore.recipes.first)
+        updatedSharedRecipe.notes = "v1"
+        sourceStore.update(updatedSharedRecipe)
+        _ = try sourceStore.synchronizeWithRememberedSharedQueue()
+
+        try staleBaselineData.write(to: latestBackupURL, options: .atomic)
+
+        let destinationStore = try makeStore(
+            directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true),
+            deviceIdentifier: "device-b",
+            deviceName: "Device B",
+            sharedSyncRootURL: sharedSyncRootURL
+        )
+        destinationStore.add(Recipe(name: "Local Only", category: .desserts, notes: "keep me"))
+        destinationStore.performAutomaticSharedQueueSyncIfNeeded(force: true)
+
+        let bootstrapResult = try destinationStore.bootstrapFromLatestSharedBackup()
+        let sharedRecipe = try XCTUnwrap(destinationStore.recipes.first(where: { $0.name == "Shared Baseline" }))
+        let localRecipe = try XCTUnwrap(destinationStore.recipes.first(where: { $0.name == "Local Only" }))
+
+        XCTAssertEqual(bootstrapResult.restoredRecipeCount, 1)
+        XCTAssertEqual(bootstrapResult.mergedLocalRecipeCount, 1)
+        XCTAssertEqual(sharedRecipe.notes, "v1")
+        XCTAssertEqual(localRecipe.notes, "keep me")
+        XCTAssertTrue(destinationStore.sharedSyncQueueStatus.hasResolvedCheckpoint)
+        XCTAssertEqual(destinationStore.sharedSyncQueueStatus.lastAppliedQueueSequence, 2)
+        XCTAssertNil(destinationStore.syncStartupNotice)
+    }
+
+    func testResolvedSharedSyncRootOverrideURLPrefersExplicitEnvironmentPath() {
+        let url = MomRecetteSetup.SharedSync.resolvedRootOverrideURL(
+            environment: [
+                MomRecetteSetup.SharedSync.rootOverrideEnvironmentKey: "/tmp/MomRecette-SharedSync-Override",
+                "SIMULATOR_HOST_HOME": "/Users/tester"
+            ],
+            isSimulatorRuntime: true
+        )
+
+        XCTAssertEqual(url?.path, "/tmp/MomRecette-SharedSync-Override")
+    }
+
+    func testResolvedSharedSyncRootOverrideURLFallsBackToStableSimulatorDocumentsPath() {
+        let url = MomRecetteSetup.SharedSync.resolvedRootOverrideURL(
+            environment: ["SIMULATOR_HOST_HOME": "/Users/tester"],
+            isSimulatorRuntime: true
+        )
+
+        XCTAssertEqual(url?.path, "/Users/tester/Documents/MomRecette-Simulator")
+    }
+
+    func testResolvedSharedSyncRootOverrideURLDoesNotUseSimulatorFallbackOnDeviceRuntime() {
+        let url = MomRecetteSetup.SharedSync.resolvedRootOverrideURL(
+            environment: ["SIMULATOR_HOST_HOME": "/Users/tester"],
+            isSimulatorRuntime: false
+        )
+
+        XCTAssertNil(url)
+    }
+
+    // Manual operator validation against the real local MomRecette library.
+    // Keep this out of the default XCTest suite to avoid skipped-test noise.
+    func manualLocalCloudSyncMigrationImportsRealMacLibraryWhenEnabled() throws {
         let localValidationFlagURL = URL(fileURLWithPath: "/tmp/MOMRECETTE_RUN_LOCAL_SYNC_VALIDATION.flag")
         let shouldRunValidation =
             ProcessInfo.processInfo.environment["MOMRECETTE_RUN_LOCAL_SYNC_VALIDATION"] == "1" ||
@@ -847,7 +1204,9 @@ final class MomRecetteTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(report.importedDishPhotoAssetCount + report.bundleBackedRecipeCount, 1)
     }
 
-    func testLocalCloudSyncCanonicalizesProductionStoreWhenEnabled() throws {
+    // Manual operator validation against the real production persistent store.
+    // Keep this out of the default XCTest suite to avoid skipped-test noise.
+    func manualLocalCloudSyncCanonicalizesProductionStoreWhenEnabled() throws {
         let canonicalizationFlagURL = URL(fileURLWithPath: "/tmp/MOMRECETTE_RUN_PRODUCTION_STORE_CANONICALIZATION.flag")
         let shouldRunValidation =
             ProcessInfo.processInfo.environment["MOMRECETTE_RUN_PRODUCTION_STORE_CANONICALIZATION"] == "1" ||

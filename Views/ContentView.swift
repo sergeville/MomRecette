@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject private var store: RecipeStore
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage(MomRecetteSetup.Appearance.modeStorageKey)
     private var appearanceModeRawValue = MomRecetteSetup.Appearance.defaultMode.rawValue
 
@@ -61,8 +62,22 @@ struct ContentView: View {
         .sheet(isPresented: $showSettings) {
             AppSettingsView()
         }
+        .alert(item: $store.syncStartupNotice) { notice in
+            Alert(
+                title: Text(notice.title),
+                message: Text(notice.message),
+                dismissButton: .default(Text("OK"))
+            )
+        }
         .onAppear {
             ensureRegularSelectionIfNeeded()
+        }
+        .task {
+            store.performAutomaticSharedQueueSyncIfNeeded()
+        }
+        .onChange(of: scenePhase) { newPhase in
+            guard newPhase == .active else { return }
+            store.performAutomaticSharedQueueSyncIfNeeded()
         }
         .onChange(of: store.filteredRecipes.map(\.id)) { _ in
             ensureRegularSelectionIfNeeded()

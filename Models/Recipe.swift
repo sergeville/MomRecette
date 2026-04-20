@@ -22,6 +22,8 @@ struct Recipe: Identifiable, Codable, Hashable {
     var isFavorite: Bool = false
     var notes: String = ""
     var createdAt: Date = Date()
+    var updatedAt: Date = Date()
+    var lastModifiedByDeviceID: String?
 
     var totalTime: Int { prepTime + cookTime }
     var firstLetter: String { String(name.prefix(1)).uppercased() }
@@ -238,6 +240,8 @@ extension Recipe {
         case isFavorite
         case notes
         case createdAt
+        case updatedAt
+        case lastModifiedByDeviceID
     }
 
     init(from decoder: Decoder) throws {
@@ -261,6 +265,8 @@ extension Recipe {
         isFavorite = try container.decodeIfPresent(Bool.self, forKey: .isFavorite) ?? false
         notes = try container.decodeIfPresent(String.self, forKey: .notes) ?? ""
         createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
+        updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? createdAt
+        lastModifiedByDeviceID = try container.decodeIfPresent(String.self, forKey: .lastModifiedByDeviceID)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -284,6 +290,8 @@ extension Recipe {
         try container.encode(isFavorite, forKey: .isFavorite)
         try container.encode(notes, forKey: .notes)
         try container.encode(createdAt, forKey: .createdAt)
+        try container.encode(updatedAt, forKey: .updatedAt)
+        try container.encodeIfPresent(lastModifiedByDeviceID, forKey: .lastModifiedByDeviceID)
     }
 }
 

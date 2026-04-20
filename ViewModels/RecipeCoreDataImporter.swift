@@ -145,7 +145,9 @@ struct RecipeCoreDataImporter {
     }
 
     private func applyRecipeFields(_ recipe: Recipe, to object: NSManagedObject) {
-        let updatedAt = max(recipe.createdAt, Date.distantPast)
+        let createdAt = max(recipe.createdAt, Date.distantPast)
+        let updatedAt = max(recipe.updatedAt, createdAt)
+        let lastModifiedByDeviceID = recipe.lastModifiedByDeviceID ?? persistentContainer.deviceIdentifier
 
         object.setValue(recipe.id, forKey: "id")
         object.setValue(recipe.name, forKey: "name")
@@ -156,9 +158,9 @@ struct RecipeCoreDataImporter {
         object.setValue(Int64(recipe.cookTime), forKey: "cookTime")
         object.setValue(recipe.notes, forKey: "notes")
         object.setValue(recipe.isFavorite, forKey: "isFavorite")
-        object.setValue(recipe.createdAt, forKey: "createdAt")
+        object.setValue(createdAt, forKey: "createdAt")
         object.setValue(updatedAt, forKey: "updatedAt")
-        object.setValue(persistentContainer.deviceIdentifier, forKey: "lastModifiedByDeviceID")
+        object.setValue(lastModifiedByDeviceID, forKey: "lastModifiedByDeviceID")
         object.setValue(recipe.photoFilename, forKey: "photoFilename")
         object.setValue(recipe.generatedImagePrompt, forKey: "generatedImagePrompt")
         object.setValue(recipe.generatedImageMode, forKey: "generatedImageMode")

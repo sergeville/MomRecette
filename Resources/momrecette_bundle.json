@@ -6599,37 +6599,17 @@
       {
         "quantity": "1",
         "name": "c. a soupe miel ou sirop d’érable"
-      },
-      {
-        "quantity": "",
-        "name": "Dans une casserole moyenne, faire bouillir 6 tasses d’eau salée."
-      },
-      {
-        "quantity": "",
-        "name": "Ajouter l’edamame et porter a ébullition."
-      },
-      {
-        "quantity": "",
-        "name": "Laisser cuire 3 minutes, ajouter les haricots et bouillir encore 3 minutes."
-      },
-      {
-        "quantity": "",
-        "name": "Égoutter les haricots et les rincer a l’eau froide."
-      },
-      {
-        "quantity": "",
-        "name": "Dans un bol moyen, mélanger les haricots refroidis et les pois chiches."
-      },
-      {
-        "quantity": "",
-        "name": "Vesser la vinaigrette en filet et remuer pour tout enrober."
-      },
-      {
-        "quantity": "",
-        "name": "Saupoudrer les graines de sésame et servir."
       }
     ],
-    "steps": [],
+    "steps": [
+      "Dans une casserole moyenne, faire bouillir 6 tasses d’eau salée.",
+      "Ajouter l’edamame et porter a ébullition.",
+      "Laisser cuire 3 minutes, ajouter les haricots et bouillir encore 3 minutes.",
+      "Égoutter les haricots et les rincer a l’eau froide.",
+      "Dans un bol moyen, mélanger les haricots refroidis et les pois chiches.",
+      "Vesser la vinaigrette en filet et remuer pour tout enrober.",
+      "Saupoudrer les graines de sésame et servir."
+    ],
     "notes": "",
     "createdAt": "2026-03-24T21:25:51.587984+00:00"
   },

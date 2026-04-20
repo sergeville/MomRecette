@@ -10,6 +10,7 @@ struct ImportView: View {
     @State private var showJSONFilePicker = false
     @State private var showPhotoPicker = false
     @State private var showSyncPackagePicker = false
+    @State private var showSharedQueuePicker = false
     @State private var importResult: ImportResult? = nil
     @State private var isLoading = false
     @State private var pendingSyncPackageImport: PendingSyncPackageImport?
@@ -17,6 +18,8 @@ struct ImportView: View {
     @State private var exportFilename = ""
     @State private var pendingSyncPackageExport: RecipeStore.SyncPackageExportPayload?
     @State private var showSyncPackageExporter = false
+    @State private var showSharedBootstrapConfirmation = false
+    @State private var showAdvancedSharedSyncOptions = false
 
     enum ImportResult {
         case success(Int)
@@ -25,10 +28,15 @@ struct ImportView: View {
         case syncExportPrepared(RecipeStore.SyncPackageExportPayload)
         case syncExportSaved(RecipeStore.SyncPackageExportPayload, URL)
         case syncImport(RecipeStore.SyncPackageImportResult)
+        case sharedQueueBootstrap(RecipeStore.SharedSyncBootstrapResult)
+        case sharedQueueConfigured(String)
+        case sharedQueueSync(RecipeStore.SharedSyncQueueSyncResult)
         case error(String)
     }
 
     var body: some View {
+        let bootstrapStatus = store.sharedSyncBootstrapStatus
+
         NavigationStack {
             VStack(spacing: 32) {
                 VStack(spacing: 12) {
@@ -44,6 +52,11 @@ struct ImportView: View {
                 }
 
                 VStack(spacing: 14) {
+                    sharedSyncSection(status: bootstrapStatus)
+
+                    Divider()
+                        .padding(.vertical, 4)
+
                     Button {
                         showJSONFilePicker = true
                     } label: {
@@ -90,9 +103,6 @@ struct ImportView: View {
                             .foregroundStyle(.primary)
                             .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
-
-                    Divider()
-                        .padding(.vertical, 4)
 
                     Button {
                         exportSyncPackage()
@@ -167,6 +177,14 @@ struct ImportView: View {
             ) { result in
                 handleSyncPackageExportResult(result)
             }
+            .alert("Initialiser cet appareil", isPresented: $showSharedBootstrapConfirmation) {
+                Button("Annuler", role: .cancel) {}
+                Button("Initialiser") {
+                    bootstrapFromLatestSharedBackup()
+                }
+            } message: {
+                Text("MomRecette va creer une sauvegarde locale, restaurer la sauvegarde partagee la plus recente, puis reprendre la queue partagee depuis le dernier point de reprise connu.")
+            }
         }
     }
 
@@ -175,6 +193,10 @@ struct ImportView: View {
         switch result {
         case .syncImport(let result):
             syncImportResultView(result)
+        case .sharedQueueBootstrap(let result):
+            sharedQueueBootstrapResultView(result)
+        case .sharedQueueSync(let result):
+            sharedQueueSyncResultView(result)
         default:
             HStack(spacing: 14) {
                 switch result {
@@ -204,6 +226,19 @@ struct ImportView: View {
                     Image(systemName: "xmark.circle.fill").foregroundStyle(.red)
                     Text(msg).lineLimit(2)
                 case .syncImport:
+                    EmptyView()
+                case .sharedQueueBootstrap:
+                    EmptyView()
+                case .sharedQueueConfigured(let path):
+                    Image(systemName: "externaldrive.badge.checkmark").foregroundStyle(.green)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Queue partagee memorisee pour cet appareil")
+                        Text(path)
+                            .font(.caption.monospaced())
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                    }
+                case .sharedQueueSync:
                     EmptyView()
                 }
             }
@@ -243,7 +278,253 @@ struct ImportView: View {
             Label("Le package de sync contient les recettes, la liste d'epicerie, les photos live et les images generees. Importer un package remplace la bibliotheque locale apres une sauvegarde automatique.", systemImage: "arrow.triangle.2.circlepath")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+
+            Label("La queue partagee garde un journal incremental. Chaque appareil memorise le fichier choisi ainsi que son dernier numero de sync applique.", systemImage: "arrow.triangle.merge")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Label("Sur simulateur, MomRecette utilise par defaut un dossier SharedSync visible dans le dossier Documents du Mac afin que l'iPhone et l'iPad simulateur partagent le meme journal sans dependre des conteneurs CoreSimulator caches.", systemImage: "macwindow.on.rectangle")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
+    }
+
+    @ViewBuilder
+    private func sharedSyncSection(status: RecipeStore.SharedSyncBootstrapStatus) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("SharedSync")
+                .font(.headline)
+
+            Text(sharedSyncSectionSummary(for: status))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            if status.requiresBootstrap {
+                bootstrapWarningView(status: status)
+            }
+
+            if let primaryAction = primarySharedSyncAction(for: status) {
+                Button {
+                    performSharedSyncPrimaryAction(primaryAction)
+                } label: {
+                    Label(primaryAction.title, systemImage: primaryAction.systemImage)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(primaryAction.usesAccent ? Color.accentColor : Color(UIColor.secondarySystemBackground))
+                        .foregroundStyle(primaryAction.usesAccent ? .white : .primary)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
+            }
+
+            if store.sharedSyncQueueStatus.rememberedQueuePath != nil || status.canonicalSharedSyncPath != nil {
+                sharedSyncLocationSummary(status: status)
+            }
+
+            DisclosureGroup("Options avancees SharedSync", isExpanded: $showAdvancedSharedSyncOptions) {
+                VStack(spacing: 10) {
+                    Button {
+                        chooseExistingSharedQueue()
+                    } label: {
+                        Label("Choisir une queue partagee", systemImage: "externaldrive.badge.icloud")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .foregroundStyle(.primary)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+
+                    if shouldExposeReconfigureAction(for: status) {
+                        Button {
+                            createSharedQueue()
+                        } label: {
+                            Label(sharedQueueActionTitle(for: status), systemImage: "plus.rectangle.on.folder")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color(UIColor.secondarySystemBackground))
+                                .foregroundStyle(.primary)
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                        }
+                    }
+                }
+                .padding(.top, 8)
+            }
+            .fileImporter(
+                isPresented: $showSharedQueuePicker,
+                allowedContentTypes: [.json],
+                allowsMultipleSelection: false
+            ) { result in
+                handleSharedQueueSelection(result: result)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private func sharedSyncLocationSummary(status: RecipeStore.SharedSyncBootstrapStatus) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let rememberedQueuePath = store.sharedSyncQueueStatus.rememberedQueuePath {
+                Text("Queue memorisee")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text(rememberedQueuePath)
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
+
+            if let canonicalSharedSyncPath = status.canonicalSharedSyncPath {
+                Text(status.usesLocalOverride ? "Dossier SharedSync simulateur" : "Dossier SharedSync iCloud")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text(canonicalSharedSyncPath)
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                if status.usesLocalOverride {
+                    Text("Ce chemin reste visible dans Finder et peut etre partage entre plusieurs simulateurs sur ce Mac. Utilisez MOMRECETTE_SHARED_SYNC_ROOT pour le remplacer.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                if let latestBackupPath = status.latestBackupPath {
+                    Text("Sauvegarde partagee: \(latestBackupPath)")
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(Color(UIColor.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private struct SharedSyncPrimaryAction {
+        let title: String
+        let systemImage: String
+        let usesAccent: Bool
+        let perform: () -> Void
+    }
+
+    private func primarySharedSyncAction(for status: RecipeStore.SharedSyncBootstrapStatus) -> SharedSyncPrimaryAction? {
+        if status.canRestoreFromLatestBackup {
+            return SharedSyncPrimaryAction(
+                title: "Initialiser depuis la sauvegarde partagee",
+                systemImage: "externaldrive.badge.checkmark",
+                usesAccent: true,
+                perform: { showSharedBootstrapConfirmation = true }
+            )
+        }
+
+        if store.sharedSyncQueueStatus.hasResolvedCheckpoint,
+           store.sharedSyncQueueStatus.rememberedQueuePath != nil {
+            return SharedSyncPrimaryAction(
+                title: "Synchroniser la queue partagee",
+                systemImage: "arrow.triangle.merge",
+                usesAccent: true,
+                perform: synchronizeWithSharedQueue
+            )
+        }
+
+        if status.isAwaitingInitialSharedBackup, status.hasLocalLibraryData {
+            return SharedSyncPrimaryAction(
+                title: "Publier la premiere sauvegarde partagee",
+                systemImage: "square.and.arrow.up.on.square",
+                usesAccent: true,
+                perform: createSharedQueue
+            )
+        }
+
+        if store.sharedSyncQueueStatus.rememberedQueuePath == nil {
+            return SharedSyncPrimaryAction(
+                title: "Activer la queue partagee iCloud",
+                systemImage: "plus.rectangle.on.folder",
+                usesAccent: true,
+                perform: createSharedQueue
+            )
+        }
+
+        return nil
+    }
+
+    private func performSharedSyncPrimaryAction(_ action: SharedSyncPrimaryAction) {
+        action.perform()
+    }
+
+    private func shouldExposeReconfigureAction(for status: RecipeStore.SharedSyncBootstrapStatus) -> Bool {
+        if status.canRestoreFromLatestBackup {
+            return true
+        }
+
+        if store.sharedSyncQueueStatus.hasResolvedCheckpoint,
+           store.sharedSyncQueueStatus.rememberedQueuePath != nil {
+            return true
+        }
+
+        return status.isAwaitingInitialSharedBackup == false
+    }
+
+    private func sharedSyncSectionSummary(for status: RecipeStore.SharedSyncBootstrapStatus) -> String {
+        if status.canRestoreFromLatestBackup {
+            return "Cet appareil a trouve une sauvegarde partagee valide et peut maintenant s'initialiser."
+        }
+
+        if status.isAwaitingInitialSharedBackup {
+            return status.hasLocalLibraryData
+                ? "Cet appareil contient des donnees locales et doit publier la premiere sauvegarde partagee."
+                : "Cet appareil attend qu'un autre appareil publie d'abord une sauvegarde partagee."
+        }
+
+        if store.sharedSyncQueueStatus.hasResolvedCheckpoint,
+           store.sharedSyncQueueStatus.rememberedQueuePath != nil {
+            return "La queue partagee est configuree pour cet appareil. Synchronisez quand vous voulez recuperer ou publier les derniers changements."
+        }
+
+        return "Activez SharedSync pour memoriser une queue partagee et reutiliser la synchronisation automatique."
+    }
+
+    private func bootstrapWarningView(status: RecipeStore.SharedSyncBootstrapStatus) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Cet appareil doit etre initialise", systemImage: "exclamationmark.triangle.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.orange)
+
+            Text(bootstrapWarningMessage(for: status))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(Color.orange.opacity(0.12))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func sharedQueueActionTitle(for status: RecipeStore.SharedSyncBootstrapStatus) -> String {
+        if status.isAwaitingInitialSharedBackup && status.hasLocalLibraryData {
+            return "Publier la premiere sauvegarde partagee"
+        }
+
+        if store.sharedSyncQueueStatus.rememberedQueuePath != nil {
+            return "Reconfigurer la queue partagee iCloud"
+        }
+
+        return "Activer la queue partagee iCloud"
+    }
+
+    private func bootstrapWarningMessage(for status: RecipeStore.SharedSyncBootstrapStatus) -> String {
+        if status.canRestoreFromLatestBackup {
+            return "Une sauvegarde partagee recente a ete trouvee. Initialisez d'abord cet appareil depuis la sauvegarde partagee, puis MomRecette appliquera le reste de la queue."
+        }
+
+        if status.isAwaitingInitialSharedBackup {
+            if status.hasLocalLibraryData {
+                return "Aucune sauvegarde partagee n'est encore disponible. Publiez d'abord la premiere sauvegarde partagee depuis cet appareil, puis les autres appareils pourront s'initialiser."
+            }
+
+            return "Aucune sauvegarde partagee n'est encore disponible. Utilisez d'abord l'appareil source qui contient deja vos recettes pour publier la premiere sauvegarde partagee."
+        }
+
+        return "Le point de reprise local n'est pas connu. Reconfigurez la queue partagee ou attendez qu'une sauvegarde partagee valide soit disponible."
     }
 
     private func handleImport(result: Result<[URL], Error>) {
@@ -330,6 +611,46 @@ struct ImportView: View {
         }
     }
 
+    private func chooseExistingSharedQueue() {
+        showSharedQueuePicker = true
+    }
+
+    private func createSharedQueue() {
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let queueURL = try store.createOrRememberCanonicalSharedQueue()
+            withAnimation { importResult = .sharedQueueConfigured(queueURL.path) }
+        } catch {
+            withAnimation { importResult = .error(error.localizedDescription) }
+        }
+    }
+
+    private func bootstrapFromLatestSharedBackup() {
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let result = try store.bootstrapFromLatestSharedBackup()
+            withAnimation { importResult = .sharedQueueBootstrap(result) }
+        } catch {
+            withAnimation { importResult = .error(error.localizedDescription) }
+        }
+    }
+
+    private func synchronizeWithSharedQueue() {
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let result = try store.synchronizeWithRememberedSharedQueue()
+            withAnimation { importResult = .sharedQueueSync(result) }
+        } catch {
+            withAnimation { importResult = .error(error.localizedDescription) }
+        }
+    }
+
     private func applySyncPackageImport(_ pendingImport: PendingSyncPackageImport) {
         pendingSyncPackageImport = nil
         isLoading = true
@@ -381,6 +702,28 @@ struct ImportView: View {
         let toAdd = Recipe.samples.filter { !existingNames.contains($0.name.lowercased()) }
         toAdd.forEach { store.add($0) }
         withAnimation { importResult = .success(toAdd.count) }
+    }
+
+    private func handleSharedQueueSelection(result: Result<[URL], Error>) {
+        switch result {
+        case .failure(let error):
+            withAnimation { importResult = .error(error.localizedDescription) }
+        case .success(let urls):
+            guard let url = urls.first else { return }
+            let accessed = url.startAccessingSecurityScopedResource()
+            defer {
+                if accessed {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+
+            do {
+                try store.rememberSharedSyncQueue(at: url)
+                withAnimation { importResult = .sharedQueueConfigured(url.path) }
+            } catch {
+                withAnimation { importResult = .error(error.localizedDescription) }
+            }
+        }
     }
 
     private func photoImportSummary(for result: RecipeStore.RecipePhotoBatchImportResult) -> String {
@@ -491,6 +834,84 @@ struct ImportView: View {
         .padding(14)
         .background(Color(UIColor.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+
+    private func sharedQueueSyncResultView(_ result: RecipeStore.SharedSyncQueueSyncResult) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 14) {
+                Image(systemName: "arrow.triangle.merge")
+                    .foregroundStyle(.green)
+                Text(sharedQueueSyncSummary(for: result))
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Fichier de queue partagee:")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text(result.queueURL.path)
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
+            .padding(.leading, 36)
+        }
+        .font(.subheadline)
+        .padding(14)
+        .background(Color(UIColor.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+
+    private func sharedQueueBootstrapResultView(_ result: RecipeStore.SharedSyncBootstrapResult) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 14) {
+                Image(systemName: "externaldrive.badge.checkmark")
+                    .foregroundStyle(.green)
+                Text(sharedQueueBootstrapSummary(for: result))
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Sauvegarde partagee utilisee:")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text(result.latestBackupURL.path)
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+
+                Text("Sauvegarde locale creee avant import:")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 4)
+                Text(result.localBackupURL.path)
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
+            .padding(.leading, 36)
+        }
+        .font(.subheadline)
+        .padding(14)
+        .background(Color(UIColor.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+
+    private func sharedQueueBootstrapSummary(for result: RecipeStore.SharedSyncBootstrapResult) -> String {
+        let mergedSuffix = result.mergedLocalRecipeCount > 0
+            ? " \(result.mergedLocalRecipeCount) recette\(result.mergedLocalRecipeCount > 1 ? "s" : "") locale\(result.mergedLocalRecipeCount > 1 ? "s" : "") a ete remergee dans la queue."
+            : ""
+        return "\(result.restoredRecipeCount) recette\(result.restoredRecipeCount > 1 ? "s" : "") restauree\(result.restoredRecipeCount > 1 ? "s" : "") depuis la sauvegarde partagee, puis \(result.queueSyncResult.pulledOperationCount) changement\(result.queueSyncResult.pulledOperationCount > 1 ? "s" : "") supplementaire\(result.queueSyncResult.pulledOperationCount > 1 ? "s" : "") applique\(result.queueSyncResult.pulledOperationCount > 1 ? "s" : "").\(mergedSuffix)"
+    }
+
+    private func sharedQueueSyncSummary(for result: RecipeStore.SharedSyncQueueSyncResult) -> String {
+        let createdPrefix = result.createdQueue ? "Queue initialisee. " : ""
+        let compactionSuffix: String
+        if result.compactedOperationCount > 0 {
+            compactionSuffix = " \(result.compactedOperationCount) ancien\(result.compactedOperationCount > 1 ? "s" : "") changement\(result.compactedOperationCount > 1 ? "s" : "") compacte\(result.compactedOperationCount > 1 ? "s" : "")."
+        } else {
+            compactionSuffix = ""
+        }
+
+        return createdPrefix + "\(result.pulledOperationCount) changement\(result.pulledOperationCount > 1 ? "s" : "") recu\(result.pulledOperationCount > 1 ? "s" : ""), \(result.pushedOperationCount) envoye\(result.pushedOperationCount > 1 ? "s" : "") vers la queue. Sequence locale: \(result.lastAppliedQueueSequence). Queue active: \(result.retainedOperationCount)." + compactionSuffix
     }
 }
 

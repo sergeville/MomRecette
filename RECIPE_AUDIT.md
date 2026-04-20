@@ -25,33 +25,37 @@ The current audit is intentionally broad. Many findings are normalization candid
 - Moved `Beignes Soeur Berthe (Jacqueline-Leon)` equipment/source lines out of the preparation steps into notes.
 - Rebuilt `Bouillon de Poulet Oriental` into a structured recipe with 8 ingredients and 4 preparation steps.
 
+## Structural Recovery Batch Completed (2026-04-20)
+
+- Recovered `Poitrine de Dinde au Pamplemousse` in the working library by restoring its preparation steps from leaked ingredient lines.
+- Recovered `Salade de Haricots` in both the working library and bundled seed data by splitting leaked preparation text out of ingredients and into explicit steps.
+- Current broad-audit deltas after this batch:
+  - `steps_missing`: `45 -> 43`
+  - `ingredient_quantity_embedded_in_name`: `153 -> 143`
+
 ## Priority Queue
 
 Ranked by current structural severity:
 
-1. `Poitrine de Dinde au Pamplemousse`
-   Missing steps and heavy ingredient/step leakage.
-2. `Salade de Haricots`
-   Missing steps and major ingredient text leakage.
-3. `Makes 6 Naan`
+1. `Makes 6 Naan`
    Many embedded ingredient lines and multiple empty steps.
-4. `Petoncles Grilles au Porto Blanc`
+2. `Petoncles Grilles au Porto Blanc`
    Missing steps, header noise, and embedded ingredient text.
-5. `Roules de Salade`
+3. `Roules de Salade`
    Many split-ingredient issues and empty steps.
-6. `Soupe aux Poissons`
+4. `Soupe aux Poissons`
    Ingredient leakage plus header noise.
-7. `Fish And Chips Moins Gras`
+5. `Fish And Chips Moins Gras`
    Missing steps and embedded ingredient text.
-8. `Curry D'agneau Creole`
+6. `Curry D'agneau Creole`
    Header noise and dense ingredient leakage.
-9. `Gateau aux Bananes`
+7. `Gateau aux Bananes`
    Header noise plus heavy quantity/name drift.
-10. `Muffins a L'erable`
-    Header noise plus heavy quantity/name drift.
-11. `Pear And Gorgonzola Mini Pizzas`
-    Header noise and embedded ingredient text.
-12. `Carre aux Dattes`
+8. `Muffins a L'erable`
+   Header noise plus heavy quantity/name drift.
+9. `Pear And Gorgonzola Mini Pizzas`
+   Header noise and embedded ingredient text.
+10. `Carre aux Dattes`
     Missing steps and heavy quantity/name drift.
 
 ## Cleanup Order
