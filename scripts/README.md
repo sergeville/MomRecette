@@ -206,6 +206,11 @@ This script:
 - refreshes `dist/sergeiPhone.ipa`
 - writes `dist/sergeiPhone-PACKAGE_INFO.txt`
 
+Important:
+
+- this export helper does not prove that the active provisioning profile already includes the new iCloud and ubiquity entitlements or the connected physical iPhone
+- use `docs/SHAREDSYNC_PHYSICAL_VALIDATION_RUNBOOK.md` for the physical-device preflight, reverse-sync verification, Sprint 49 smoke pass, and merge gate
+
 ## Packaging assets
 
 Reusable packaging assets belong under `scripts/assets/`.
