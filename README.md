@@ -140,6 +140,8 @@ Prérequis:
 - signature iPhone valide dans Xcode
 - provisioning profile compatible avec votre iPhone 15
 
+Pour la préflight physique `SharedSync` (profil iCloud/ubiquity, iPhone connecté, smoke final et gate de merge), suivez `docs/SHAREDSYNC_PHYSICAL_VALIDATION_RUNBOOK.md`.
+
 Si Xcode doit régénérer les profils automatiquement, exécutez:
 
 ```bash
@@ -230,6 +232,8 @@ Limites actuelles:
 - ce n'est pas un sync temps réel
 - chaque nouvel export doit être réimporté sur l'autre appareil
 - l'import remplace la bibliothèque locale de l'appareil cible après sauvegarde automatique
+
+Pour les validations encore bloquées sur appareil physique, la vérification depuis recette détail > `Sync`, et la décision finale de merge de `upgrade/1.0.5`, voir `docs/SHAREDSYNC_PHYSICAL_VALIDATION_RUNBOOK.md`.
 
 ## SharedSync sur simulateur
 

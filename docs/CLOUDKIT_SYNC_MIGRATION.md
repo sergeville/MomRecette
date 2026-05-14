@@ -16,6 +16,8 @@ Until Apple Developer / CloudKit provisioning is available, the practical cross-
 
 So this document remains the target architecture contract, not the current live operator workflow.
 
+For the current `upgrade/1.0.5` physical-device gate, provisioning checklist, and merge-readiness decision, use `docs/SHAREDSYNC_PHYSICAL_VALIDATION_RUNBOOK.md`.
+
 ## Goal
 
 Move MomRecette from per-device local JSON storage to a local-first store that stays synchronized across iPhone, iPad, and Mac Catalyst without data loss.
